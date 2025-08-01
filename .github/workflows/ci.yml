@@ -1,0 +1,29 @@
+name: Java CI with Maven
+
+# This workflow will run on pushes to the 'main' branch and on pull requests targeting 'main'
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # The build will fail if any tests fail, blocking the PR from merging.
+      - name: Build and test with Maven
+        run: ./mvnw -B clean verify
