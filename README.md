@@ -1,100 +1,36 @@
 # Spring Boot Security & Observability Lab
 
-This repository is a hands-on lab designed to demonstrate the architectural evolution of a modern Java application. We
-will build a system from the ground up, starting with a secure monolith and progressively refactoring it into a fully
-observable, distributed system using cloud-native best practices.
+This repository is an advanced, hands-on lab demonstrating the architectural evolution of a modern Java application. We will build a system from the ground up, starting with a secure monolith and progressively refactoring it into a fully observable, distributed system using cloud-native best practices.
 
 ---
 
-## Lab Progress: Phase 1 - The Standalone Secure Monolith
+## Workshop Guide: The Evolutionary Phases
 
-The `main` branch currently represents the completed state of **Phase 1**.
+This lab is structured in distinct, self-contained phases. The `main` branch always represents the latest completed phase. To explore a previous phase's code and detailed documentation, use the links below.
 
-### Objective
-
-The goal of this phase is to establish a robust security baseline for a standalone REST API. The service is responsible
-for both authenticating users and issuing its own JSON Web Tokens (JWTs) without any external identity providers.
-
-### Key Concepts Demonstrated
-
-* **Self-Contained JWT Authentication:** The service acts as its own Authorization Server.
-* **Credential Validation:** Correctly delegating username/password validation to Spring Security's
-  `AuthenticationManager`.
-* **Token Generation:** Using the `io.jsonwebtoken` (`jjwt`) library to create signed, expiring JWTs.
-* **Custom Token Validation:** Implementing a custom `OncePerRequestFilter` to intercept requests, validate the Bearer
-  token, and populate Spring's `SecurityContext`.
-* **Stateless API Design:** Ensuring the application is fully stateless, a prerequisite for modern scalable services.
-
-### Architecture Overview
-
-The architecture for Phase 1 is a single Spring Boot application. The security logic is composed of three main
-components:
-
-1. **[SecurityConfig](resource-server/src/main/java/com/apenlor/lab/resourceserver/config/SecurityConfig.java):** This
-   is the core configuration class. It defines the `AuthenticationManager` for validating credentials, sets up the
-   `UserDetailsService` (using an in-memory store for this phase), and configures the main `SecurityFilterChain`.
-2. **[TokenService](resource-server/src/main/java/com/apenlor/lab/resourceserver/service/TokenService.java):** A
-   dedicated service that encapsulates all logic for creating and parsing JWTs using the `jjwt` library and our secret
-   key.
-3. **[JwtAuthenticationFilter](resource-server/src/main/java/com/apenlor/lab/resourceserver/config/JwtAuthenticationFilter.java):** 
-   A custom filter that is added to the security chain. On every request to a protected endpoint, this filter
-   extracts the `Bearer` token, uses the `TokenService` to validate it, and establishes the user's identity for the
-   duration of the request.
+| Phase                                    | Description & Key Concepts                                                                                                                                                        | Code & Docs (at tag)                                                                                                            | Key Pull Requests                                                                                                                                                                                                                              |
+|:-----------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **1. The Secure Monolith**               | A standalone service that issues and validates its own JWTs. Concepts: `AuthenticationManager`, custom `JwtAuthenticationFilter`, `jjwt` library, and a foundational CI pipeline. | [`v1.0-secure-monolith`](https://github.com/apenlor/spring-boot-security-observability-lab/blob/v1.0-secure-monolith/README.md) | [#2](https://github.com/apenlor/spring-boot-security-observability-lab/pull/2), [#3](https://github.com/apenlor/spring-boot-security-observability-lab/pull/3), [#4](https://github.com/apenlor/spring-boot-security-observability-lab/pull/4) |
+| **2. Observing the Monolith**            | *Upcoming...*                                                                                                                                                                     | -                                                                                                                               | -                                                                                                                                                                                                                                              |
+| **3. Evolving to Federated Identity**    | *Upcoming...*                                                                                                                                                                     | -                                                                                                                               | -                                                                                                                                                                                                                                              |
+| **4. Tracing a Distributed System**      | *Upcoming...*                                                                                                                                                                     | -                                                                                                                               | -                                                                                                                                                                                                                                              |
+| **5. Correlated Logs & Access Auditing** | *Upcoming...*                                                                                                                                                                     | -                                                                                                                               | -                                                                                                                                                                                                                                              |
+| **6. Continuous Security Integration**   | *Upcoming...*                                                                                                                                                                     | -                                                                                                                               | -                                                                                                                                                                                                                                              |
 
 ---
 
-## Local Development & Quick Start
+## How to Follow This Lab
 
-The only prerequisite is a Java 21 JDK.
-
-1. **Build the application:**
-   ```bash
-   ./mvnw clean install
-   ```
-2. **Run the application:**
-   ```bash
-   ./mvnw -pl resource-server spring-boot:run
-   ```
-   The application will start on `http://localhost:8081`.
+1.  **Start with the `main` branch** to see the latest state of the project.
+2.  To go back in time, use the **"Code & Docs" link** for a specific phase. This will show you the `README.md` for that phase, which contains the specific instructions and examples for that version of the code.
+3.  To understand the *"why"* behind the changes, review the **Key Pull Requests** for each phase.
 
 ---
 
-## API Usage Examples (Phase 1)
+## Running the Project
 
-*(Requires a command-line JSON processor like `jq` to easily extract the token.)*
+To run the application and see usage examples for the **current phase**, please refer to the detailed instructions in its tagged `README.md` file.
 
-#### 1. Authenticate and Get a Token
+**[>> Go to instructions for the current phase: `v1.0-secure-monolith` <<](https://github.com/apenlor/spring-boot-security-observability-lab/blob/v1.0-secure-monolith/README.md#local-development--quick-start)**
 
-Send the hardcoded credentials to the `/auth/login` endpoint to receive a JWT.
-
-```bash
-    TOKEN=$(curl -s -X POST http://localhost:8081/auth/login \
-    -H "Content-Type: application/json" \
-    -d '{"username":"user", "password":"password"}' | jq -r .jwtToken)
-    
-    echo "Acquired Token: $TOKEN"
-```
-
-#### 2. Access the Public Endpoint
-
-This endpoint requires no token and should always succeed.
-
-```bash
-  curl http://localhost:8081/api/public/info
-```
-
-#### 3. Access the Secure Endpoint (with Token)
-
-Use the acquired token in the `Authorization` header to access the protected resource.
-
-```bash
-    curl http://localhost:8081/api/secure/data -H "Authorization: Bearer $TOKEN"
-```
-
-#### 4. Access the Secure Endpoint (without Token)
-
-This request will fail with a `401 Unauthorized` error, as handled by our security configuration.
-
-```bash
-    curl -i http://localhost:8081/api/secure/data
-```
+As the lab progresses, this link will always be updated to point to the latest completed phase.
