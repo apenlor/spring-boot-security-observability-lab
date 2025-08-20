@@ -1,0 +1,47 @@
+services:
+  # --------------------------------------------------------------------------
+  # Application Service: The resource-server we built.
+  # --------------------------------------------------------------------------
+  resource-server:
+    build:
+      context: .
+      dockerfile: resource-server/Dockerfile
+    container_name: resource-server
+    env_file:
+      - .env
+    environment:
+      # We enable the 'chaos' profile to activate the ChaosController for demonstration.
+      - SPRING_PROFILES_ACTIVE=chaos
+    ports:
+      - "8081:8081" # Business API port
+      - "9092:9092" # Management/Actuator port
+
+  # --------------------------------------------------------------------------
+  # Prometheus Service: For metrics collection.
+  # --------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+  # --------------------------------------------------------------------------
+  # Grafana Service: For metrics visualization.
+  # --------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana-oss:12.1.1
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./config/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+
+volumes:
+  grafana-data:
