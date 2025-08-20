@@ -1,4 +1,4 @@
-package com.apenlor.lab.resourceserver.controller;
+package com.apenlor.lab.resourceserver.api;
 
 import com.apenlor.lab.resourceserver.auth.service.JwtTokenService;
 import com.apenlor.lab.resourceserver.dto.LoginRequest;

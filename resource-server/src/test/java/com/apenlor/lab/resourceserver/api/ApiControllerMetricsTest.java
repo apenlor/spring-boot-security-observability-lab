@@ -1,4 +1,4 @@
-package com.apenlor.lab.resourceserver.controller;
+package com.apenlor.lab.resourceserver.api;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
