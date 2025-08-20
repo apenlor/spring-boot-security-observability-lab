@@ -1,7 +1,9 @@
 package com.apenlor.lab.resourceserver.exception;
 
 import com.apenlor.lab.resourceserver.dto.ErrorResponse;
+import io.micrometer.core.instrument.Counter;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
@@ -18,6 +20,12 @@ import java.time.Instant;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private final Counter failedLoginsCounter;
+
+    public GlobalExceptionHandler(@Qualifier("failedLoginsCounter") Counter failedLoginsCounter) {
+        this.failedLoginsCounter = failedLoginsCounter;
+    }
+
     /**
      * Handles authentication-related exceptions thrown from within controllers.
      *
@@ -27,6 +35,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex, HttpServletRequest request) {
+        failedLoginsCounter.increment();
         ErrorResponse errorResponse = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.UNAUTHORIZED.value(),

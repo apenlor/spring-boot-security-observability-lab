@@ -2,6 +2,8 @@ package com.apenlor.lab.resourceserver.controller;
 
 import com.apenlor.lab.resourceserver.dto.ApiResponse;
 import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.Counter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api")
 public class ApiController {
+
+    private final Counter secureEndpointRequestCounter;
+
+    public ApiController(@Qualifier("secureEndpointRequestCounter") Counter secureEndpointRequestCounter) {
+        this.secureEndpointRequestCounter = secureEndpointRequestCounter;
+    }
 
     /**
      * An unsecured endpoint that provides public information.
@@ -40,6 +48,7 @@ public class ApiController {
     @GetMapping("/secure/data")
     @Timed(value = "http.requests.api", description = "Time taken to return secure API data", extraTags = {"endpoint", "secure"})
     public ResponseEntity<ApiResponse> getSecureData(Authentication authentication) {
+        secureEndpointRequestCounter.increment();
         String username = authentication.getName();
         String message = String.format("This is SECURE data for user: %s. You should only see this if you are authenticated.", username);
         return ResponseEntity.ok(new ApiResponse(message));

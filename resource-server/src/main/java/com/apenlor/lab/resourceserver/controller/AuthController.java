@@ -4,6 +4,7 @@ import com.apenlor.lab.resourceserver.auth.service.JwtTokenService;
 import com.apenlor.lab.resourceserver.dto.LoginRequest;
 import com.apenlor.lab.resourceserver.dto.LoginResponse;
 import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.Counter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -25,11 +26,15 @@ public class AuthController {
     private final AuthenticationProvider jwtAuthenticationProvider;
     private final JwtTokenService jwtTokenService;
 
+    private final Counter successfulLoginsCounter;
+
     public AuthController(
             @Qualifier("jwtAuthenticationProvider") AuthenticationProvider jwtAuthenticationProvider,
-            JwtTokenService jwtTokenService) {
+            JwtTokenService jwtTokenService,
+            @Qualifier("successfulLoginsCounter") Counter successfulLoginsCounter) {
         this.jwtAuthenticationProvider = jwtAuthenticationProvider;
         this.jwtTokenService = jwtTokenService;
+        this.successfulLoginsCounter = successfulLoginsCounter;
     }
 
     /**
@@ -50,6 +55,7 @@ public class AuthController {
         );
 
         String token = jwtTokenService.generateToken(authentication);
+        successfulLoginsCounter.increment();
 
         return ResponseEntity.ok(new LoginResponse(token));
     }

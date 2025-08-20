@@ -3,12 +3,14 @@ package com.apenlor.lab.resourceserver.auth;
 import com.apenlor.lab.resourceserver.auth.service.JwtTokenService;
 import com.apenlor.lab.resourceserver.auth.service.JwtUserService;
 import io.jsonwebtoken.JwtException;
+import io.micrometer.core.instrument.Counter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,10 +38,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenService jwtTokenService;
     private final JwtUserService jwtUserService;
+    private final Counter failedLoginsCounter;
 
-    public JwtAuthenticationFilter(JwtTokenService jwtTokenService, JwtUserService jwtUserService) {
+    public JwtAuthenticationFilter(JwtTokenService jwtTokenService, JwtUserService jwtUserService,
+                                   @Qualifier("failedLoginsCounter") Counter failedLoginsCounter) {
         this.jwtTokenService = jwtTokenService;
         this.jwtUserService = jwtUserService;
+        this.failedLoginsCounter = failedLoginsCounter;
     }
 
     @Override
@@ -58,6 +63,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 log.warn("JWT processing failed: {}. Path: {}", e.getMessage(), request.getRequestURI());
             }
 
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                failedLoginsCounter.increment();
+            }
         });
 
         filterChain.doFilter(request, response);
