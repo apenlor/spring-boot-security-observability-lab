@@ -40,9 +40,9 @@ public class JwtTokenService {
      * makes the component's dependencies explicit and ensures the service is immutable and
      * fully configured upon creation, enhancing reliability and testability.
      *
-     * @param jwtSecretKey The HS256 secret key, injected from application properties.
+     * @param jwtSecretKey The HS256 secret key, injected from the application's environment.
      */
-    public JwtTokenService(@Value("${jwt.secret.key}") String jwtSecretKey) {
+    public JwtTokenService(@Value("${JWT_SECRET_KEY}") String jwtSecretKey) {
         this.key = Keys.hmacShaKeyFor(jwtSecretKey.getBytes());
         this.jwtParser = Jwts.parser().verifyWith(this.key).build();
     }
