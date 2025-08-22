@@ -1,0 +1,27 @@
+# ===================================================================
+# GLOBAL CONFIGURATION
+# ===================================================================
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# ===================================================================
+# SCRAPE CONFIGURATIONS
+# ===================================================================
+scrape_configs:
+  # -----------------------------------------------------------------
+  # Job: resource-server (Our Spring Boot Application)
+  # -----------------------------------------------------------------
+  - job_name: 'resource-server'
+    metrics_path: '/actuator/prometheus'
+    basic_auth:
+      username_file: /run/secrets/actuator_username
+      password_file: /run/secrets/actuator_password
+
+    # Service Discovery
+    static_configs:
+      - targets: ['host.docker.internal:9092']
+        # 'host.docker.internal' is a special DNS name provided by Docker that
+        # resolves to the internal IP address of the host machine. This is a reliable
+        # way for a container (Prometheus) to connect to a port exposed by another
+        # container (resource-server) on the same host during local development.

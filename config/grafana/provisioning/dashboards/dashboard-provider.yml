@@ -1,0 +1,17 @@
+# File: config/grafana/provisioning/dashboards/dashboard-provider.yml
+apiVersion: 1
+
+providers:
+  - name: 'default'
+    orgId: 1
+    folder: ''
+    type: file
+    # Disables the deletion of dashboards from the UI if the file is removed from the filesystem.
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    # Allows editing the dashboards in the Grafana UI after they've been provisioned.
+    allowUiUpdates: true
+    options:
+      # The path inside the container where Grafana will look for dashboard JSON files.
+      # This must match the volume mount in our docker-compose.yml.
+      path: /var/lib/grafana/dashboards
