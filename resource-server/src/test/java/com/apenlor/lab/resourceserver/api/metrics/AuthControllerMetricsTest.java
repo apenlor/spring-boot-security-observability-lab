@@ -1,5 +1,6 @@
-package com.apenlor.lab.resourceserver.api;
+package com.apenlor.lab.resourceserver.api.metrics;
 
+import com.apenlor.lab.resourceserver.api.AuthController;
 import com.apenlor.lab.resourceserver.auth.service.JwtTokenService;
 import com.apenlor.lab.resourceserver.dto.LoginRequest;
 import com.apenlor.lab.resourceserver.exception.GlobalExceptionHandler;

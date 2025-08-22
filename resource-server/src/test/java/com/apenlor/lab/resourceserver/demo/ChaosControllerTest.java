@@ -1,24 +1,14 @@
 package com.apenlor.lab.resourceserver.demo;
 
-import com.apenlor.lab.resourceserver.dto.LoginRequest;
-import com.apenlor.lab.resourceserver.dto.LoginResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.apenlor.lab.resourceserver.BaseControllerIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -30,23 +20,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * It uses @MockBean to replace the real RandomnessProvider with a mock, allowing us
  * to write 100% deterministic tests for behavior that is normally random.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
 @ActiveProfiles("chaos")
 @DisplayName("Demo: /demo Endpoint (Chaos Profile)")
-@TestPropertySource(properties = {
-        "JWT_SECRET_KEY=a-valid-secret-key-for-testing-that-is-at-least-32-bytes-long",
-        "ACTUATOR_USERNAME=actuator",
-        "ACTUATOR_PASSWORD=actuator-password",
-        "ACTUATOR_ROLES=ACTUATOR_ADMIN"
-})
-class ChaosControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class ChaosControllerTest extends BaseControllerIntegrationTest {
 
     // By using @MockitoBean, Spring's test context will replace the real
     // RandomnessProvider bean with this mock instance wherever it is injected.
@@ -89,25 +65,5 @@ class ChaosControllerTest {
         mockMvc.perform(get("/demo/flaky-request")
                         .header("Authorization", "Bearer " + validJwt))
                 .andExpect(status().isInternalServerError());
-    }
-
-    /**
-     * A private helper method to perform a login and extract the resulting JWT.
-     * This keeps tests clean and focused on their specific assertions.
-     *
-     * @return A valid JWT string for the test user.
-     * @throws Exception if the mockMvc performance fails.
-     */
-    private String obtainValidJwt() throws Exception {
-        var loginRequest = new LoginRequest("user", "password");
-        MvcResult result = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String responseBody = result.getResponse().getContentAsString();
-        LoginResponse loginResponse = objectMapper.readValue(responseBody, LoginResponse.class);
-        return loginResponse.jwtToken();
     }
 }

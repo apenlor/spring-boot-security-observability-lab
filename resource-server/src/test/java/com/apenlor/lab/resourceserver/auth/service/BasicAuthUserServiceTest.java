@@ -6,11 +6,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,13 +27,17 @@ import static org.mockito.Mockito.when;
  * It ensures that the service correctly uses the injected configuration properties to
  * build the UserDetails for the actuator.
  */
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(SpringExtension.class)
+@TestPropertySource(locations = "classpath:application-test.properties")
 @DisplayName("BasicAuthUserService Unit Tests")
 class BasicAuthUserServiceTest {
 
-    private static final String TEST_USERNAME = "actuator";
-    private static final String TEST_PASSWORD = "actuator-password";
-    private static final String TEST_ROLES = "ACTUATOR_ADMIN";
+    @Value("${test.actuator.username}")
+    private String testUsername;
+    @Value("${test.actuator.password}")
+    private String testPassword;
+    @Value("${test.actuator.roles}")
+    private String testRoles;
 
     @Mock
     private PasswordEncoder mockPasswordEncoder;
@@ -44,9 +50,9 @@ class BasicAuthUserServiceTest {
         // This isolates the test from the actual application.properties file.
         basicAuthUserService = new BasicAuthUserService(
                 mockPasswordEncoder,
-                TEST_USERNAME,
-                TEST_PASSWORD,
-                TEST_ROLES
+                testUsername,
+                testPassword,
+                testRoles
         );
     }
 
@@ -58,14 +64,14 @@ class BasicAuthUserServiceTest {
         @DisplayName("Given the correct actuator username, should return correct UserDetails")
         void withValidUsername_shouldReturnUserDetails() {
             // Arrange
-            when(mockPasswordEncoder.encode(TEST_PASSWORD)).thenReturn("{bcrypt}encoded_actuator_password");
+            when(mockPasswordEncoder.encode(testPassword)).thenReturn("{bcrypt}encoded_actuator_password");
 
             // Act
-            UserDetails userDetails = basicAuthUserService.loadUserByUsername(TEST_USERNAME);
+            UserDetails userDetails = basicAuthUserService.loadUserByUsername(testUsername);
 
             // Assert
             assertNotNull(userDetails);
-            assertEquals(TEST_USERNAME, userDetails.getUsername());
+            assertEquals(testUsername, userDetails.getUsername());
             assertEquals("{bcrypt}encoded_actuator_password", userDetails.getPassword());
 
             Set<String> authorities = userDetails.getAuthorities().stream()
@@ -93,11 +99,11 @@ class BasicAuthUserServiceTest {
         @DisplayName("Should return a new UserDetails instance on each call")
         void shouldReturnNewInstanceOnEachCall() {
             // Arrange
-            when(mockPasswordEncoder.encode(TEST_PASSWORD)).thenReturn("{bcrypt}encoded_actuator_password");
+            when(mockPasswordEncoder.encode(testPassword)).thenReturn("{bcrypt}encoded_actuator_password");
 
             // Act
-            UserDetails userDetails1 = basicAuthUserService.loadUserByUsername(TEST_USERNAME);
-            UserDetails userDetails2 = basicAuthUserService.loadUserByUsername(TEST_USERNAME);
+            UserDetails userDetails1 = basicAuthUserService.loadUserByUsername(testUsername);
+            UserDetails userDetails2 = basicAuthUserService.loadUserByUsername(testUsername);
 
             // Assert
             assertNotSame(userDetails1, userDetails2, "Should return a new object instance on every call");

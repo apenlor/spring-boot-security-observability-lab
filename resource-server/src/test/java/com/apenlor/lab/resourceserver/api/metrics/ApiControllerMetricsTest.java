@@ -1,5 +1,6 @@
-package com.apenlor.lab.resourceserver.api;
+package com.apenlor.lab.resourceserver.api.metrics;
 
+import com.apenlor.lab.resourceserver.api.ApiController;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;

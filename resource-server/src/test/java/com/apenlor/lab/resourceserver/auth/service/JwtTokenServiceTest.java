@@ -11,11 +11,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
@@ -30,12 +32,15 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for the JwtTokenService.
  */
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(SpringExtension.class)
+@TestPropertySource(locations = "classpath:application-test.properties")
 @DisplayName("JwtTokenService Unit Tests")
 class JwtTokenServiceTest {
 
-    private static final String TEST_SECRET_KEY = "our-super-secret-and-long-key-for-hs256-which-is-at-least-32-bytes-long";
     private static final String TEST_USERNAME = "test-user";
+
+    @Value("${test.jwt.secret-key}")
+    private String testSecretKey;
 
     @Mock
     private Authentication mockAuthentication;
@@ -44,7 +49,7 @@ class JwtTokenServiceTest {
 
     @BeforeEach
     void setUp() {
-        jwtTokenService = new JwtTokenService(TEST_SECRET_KEY);
+        jwtTokenService = new JwtTokenService(testSecretKey);
     }
 
     /**
@@ -92,7 +97,7 @@ class JwtTokenServiceTest {
         void generateToken_shouldHaveFutureExpiration() {
             String token = jwtTokenService.generateToken(mockAuthentication);
             Jws<Claims> claimsJws = Jwts.parser()
-                    .verifyWith(Keys.hmacShaKeyFor(TEST_SECRET_KEY.getBytes()))
+                    .verifyWith(Keys.hmacShaKeyFor(testSecretKey.getBytes()))
                     .build().parseSignedClaims(token);
             Date expiration = claimsJws.getPayload().getExpiration();
             assertNotNull(expiration);
@@ -121,7 +126,7 @@ class JwtTokenServiceTest {
             String expiredToken = Jwts.builder()
                     .subject(TEST_USERNAME)
                     .expiration(Date.from(Instant.now().minus(1, ChronoUnit.SECONDS)))
-                    .signWith(Keys.hmacShaKeyFor(TEST_SECRET_KEY.getBytes()))
+                    .signWith(Keys.hmacShaKeyFor(testSecretKey.getBytes()))
                     .compact();
             assertFalse(jwtTokenService.isTokenValid(expiredToken, TEST_USERNAME));
         }

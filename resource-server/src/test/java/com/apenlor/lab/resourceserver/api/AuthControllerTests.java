@@ -1,5 +1,6 @@
 package com.apenlor.lab.resourceserver.api;
 
+import com.apenlor.lab.resourceserver.BaseControllerIntegrationTest;
 import com.apenlor.lab.resourceserver.dto.LoginRequest;
 import com.apenlor.lab.resourceserver.dto.LoginResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,22 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * the entire security filter chain and the custom JwtAuthenticationProvider are active.
  * This validates the complete login flow from HTTP request to JWT response.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
 @DisplayName("API: /auth Endpoint")
-@TestPropertySource(properties = {
-        "JWT_SECRET_KEY=a-valid-secret-key-for-testing-that-is-at-least-32-bytes-long",
-        "ACTUATOR_USERNAME=actuator",
-        "ACTUATOR_PASSWORD=actuator-password",
-        "ACTUATOR_ROLES=ACTUATOR_ADMIN"
-})
-class AuthControllerTests {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class AuthControllerTests extends BaseControllerIntegrationTest {
 
     @Nested
     @DisplayName("POST /login")
