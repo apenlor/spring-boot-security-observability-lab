@@ -34,9 +34,9 @@ public class BasicAuthUserService implements UserDetailsService {
      */
     public BasicAuthUserService(
             PasswordEncoder passwordEncoder,
-            @Value("${management.security.user.name}") String managementUsername,
-            @Value("${management.security.user.password}") String managementPassword,
-            @Value("${management.security.user.roles}") String managementUserRoles) {
+            @Value("${ACTUATOR_USERNAME}") String managementUsername,
+            @Value("${ACTUATOR_PASSWORD}") String managementPassword,
+            @Value("${ACTUATOR_ROLES}") String managementUserRoles) {
         this.passwordEncoder = passwordEncoder;
         this.managementUsername = managementUsername;
         this.managementPassword = managementPassword;

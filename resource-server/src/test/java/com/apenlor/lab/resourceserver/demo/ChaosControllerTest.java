@@ -35,7 +35,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("chaos")
 @DisplayName("Demo: /demo Endpoint (Chaos Profile)")
 @TestPropertySource(properties = {
-        "JWT_SECRET_KEY=a-valid-secret-key-for-testing-that-is-at-least-32-bytes-long"
+        "JWT_SECRET_KEY=a-valid-secret-key-for-testing-that-is-at-least-32-bytes-long",
+        "ACTUATOR_USERNAME=actuator",
+        "ACTUATOR_PASSWORD=actuator-password",
+        "ACTUATOR_ROLES=ACTUATOR_ADMIN"
 })
 class ChaosControllerTest {
 

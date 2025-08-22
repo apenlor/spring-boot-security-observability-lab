@@ -26,6 +26,9 @@ services:
       - "9090:9090"
     volumes:
       - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    secrets:
+      - actuator_username
+      - actuator_password
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
 
@@ -42,6 +45,12 @@ services:
       - ./config/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - ./config/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
       - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+
+secrets:
+  actuator_username:
+    environment: "ACTUATOR_USERNAME"
+  actuator_password:
+    environment: "ACTUATOR_PASSWORD"
 
 volumes:
   grafana-data:
