@@ -1,4 +1,4 @@
-name: Java CI with Maven
+name: Java CI & Docker Build
 
 # This workflow will run on pushes to the 'main' branch and on pull requests targeting 'main'
 on:
@@ -8,8 +8,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-    # The type of runner that the job will run on
+  build_and_test:
+    name: Build & Test Application
     runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -27,3 +27,31 @@ jobs:
       # The build will fail if any tests fail, blocking the PR from merging.
       - name: Build and test with Maven
         run: ./mvnw -B clean verify
+
+  build_docker_image:
+    name: Build Docker Image
+    # This job will only run if the 'build_and_test' job succeeds.
+    needs: build_and_test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        # docker/setup-qemu-action@v3.6.0
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392
+
+      - name: Set up Docker Buildx
+        # docker/setup-buildx-action@v3.11.1
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
+
+      - name: Build the Docker image
+        # This command proves that our Dockerfile is valid and can be built.
+        # We don't push the image in this CI workflow, as that is a CD (Continuous Deployment) task.
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -t security-lab/resource-server:ci-build \
+            -f ./resource-server/Dockerfile \
+            .
