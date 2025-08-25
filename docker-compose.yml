@@ -9,12 +9,94 @@ services:
     container_name: resource-server
     env_file:
       - .env
+    ports:
+      - "8081:8081" # Business API port
     environment:
       # We enable the 'chaos' profile to activate the ChaosController for demonstration.
       - SPRING_PROFILES_ACTIVE=chaos
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9092/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - lab-net
+
+  # --------------------------------------------------------------------------
+  # Identity & Access Management Service: Keycloak
+  # --------------------------------------------------------------------------
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.3
+    container_name: keycloak
+    env_file:
+      - .env
+    environment:
+      - KC_HEALTH_ENABLED=true
+      # Database Configuration
+      - KC_DB=postgres
+      - KC_DB_URL_HOST=postgres
+      - KC_DB_URL_DATABASE=${POSTGRES_DB}
+      - KC_DB_USERNAME=${POSTGRES_USER}
+      - KC_DB_PASSWORD=${POSTGRES_PASSWORD}
+      - KC_DB_SCHEMA=public
+    volumes:
+      - ./config/keycloak:/opt/keycloak/data/import # Mount the realm export file for automatic import on startup.
+    command:
+      - start-dev # Disables enforced HTTPS
+      - --import-realm # Enables the realm import to avoid fulfilling it manually
+    healthcheck:
+      # A bit tricky, but necessary as image does not contain curl or wget
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep 'HTTP/1.1 200 OK' <&3" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keycloak.rule=Host(`keycloak.local`)"
+      - "traefik.http.routers.keycloak.entrypoints=web"
+      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
+    depends_on:
+      - postgres
+    networks:
+      - lab-net
+
+  # --------------------------------------------------------------------------
+  # Reverse Proxy Traefik for Keycloak
+  # --------------------------------------------------------------------------
+  traefik:
+    image: traefik:v3.5
+    container_name: traefik-proxy
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
     ports:
-      - "8081:8081" # Business API port
-      - "9092:9092" # Management/Actuator port
+      - "80:80" # Public web traffic for Keycloak
+      - "8080:8080" # Dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      lab-net:
+        aliases:
+          - keycloak.local
+
+  # --------------------------------------------------------------------------
+  # Database Service for Keycloak
+  # --------------------------------------------------------------------------
+  postgres:
+    image: postgres:17.6-alpine
+    container_name: postgres
+    env_file:
+      - .env
+    volumes:
+      - keycloak-db-data:/var/lib/postgresql/data
+    networks:
+      - lab-net
 
   # --------------------------------------------------------------------------
   # Prometheus Service: For metrics collection.
@@ -31,6 +113,10 @@ services:
       - actuator_password
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+    depends_on:
+      - resource-server
+    networks:
+      - lab-net
 
   # --------------------------------------------------------------------------
   # Grafana Service: For metrics visualization.
@@ -45,6 +131,10 @@ services:
       - ./config/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - ./config/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
       - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - lab-net
 
 secrets:
   actuator_username:
@@ -54,3 +144,8 @@ secrets:
 
 volumes:
   grafana-data:
+  keycloak-db-data:
+
+networks:
+  lab-net:
+    driver: bridge
