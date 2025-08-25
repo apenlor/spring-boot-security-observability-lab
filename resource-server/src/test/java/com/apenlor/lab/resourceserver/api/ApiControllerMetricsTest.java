@@ -1,6 +1,5 @@
-package com.apenlor.lab.resourceserver.api.metrics;
+package com.apenlor.lab.resourceserver.api;
 
-import com.apenlor.lab.resourceserver.api.ApiController;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +46,19 @@ class ApiControllerMetricsTest {
     }
 
     @Test
+    @DisplayName("When getPublicInfo is called, should NOT increment the secure request counter")
+    void getPublicInfo_shouldNotIncrementSecureRequestCounter() {
+        // Arrange
+        assertEquals(0.0, secureEndpointRequestCounter.count(), "Counter should start at 0");
+
+        // Act
+        apiController.getPublicInfo();
+
+        // Assert
+        assertEquals(0.0, secureEndpointRequestCounter.count(), "Counter should not be incremented for public endpoint");
+    }
+
+    @Test
     @DisplayName("When getSecureData is called, should increment the secure request counter")
     void getSecureData_shouldIncrementSecureRequestCounter() {
         // Arrange
@@ -63,15 +75,16 @@ class ApiControllerMetricsTest {
     }
 
     @Test
-    @DisplayName("When getPublicInfo is called, should NOT increment the secure request counter")
-    void getPublicInfo_shouldNotIncrementSecureRequestCounter() {
+    @DisplayName("When getAdminData is called, should increment the secure request counter")
+    void getAdminData_shouldIncrementSecureRequestCounter() {
         // Arrange
+        when(mockAuthentication.getName()).thenReturn("admin-user");
         assertEquals(0.0, secureEndpointRequestCounter.count(), "Counter should start at 0");
 
         // Act
-        apiController.getPublicInfo();
+        apiController.getAdminData(mockAuthentication);
 
         // Assert
-        assertEquals(0.0, secureEndpointRequestCounter.count(), "Counter should not be incremented for public endpoint");
+        assertEquals(1.0, secureEndpointRequestCounter.count(), "Counter should be incremented by 1 for admin endpoint");
     }
 }

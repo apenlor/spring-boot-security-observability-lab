@@ -1,20 +1,16 @@
-// File: src/test/java/com/apenlor/lab/resourceserver/BaseControllerIntegrationTest.java
-
 package com.apenlor.lab.resourceserver;
 
-import com.apenlor.lab.resourceserver.dto.LoginRequest;
-import com.apenlor.lab.resourceserver.dto.LoginResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
 /**
  * An abstract base class for all controller integration tests.
@@ -22,13 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(locations = "classpath:application-test.properties",
-        properties = {
-                "JWT_SECRET_KEY=${test.jwt.secret-key}",
-                "ACTUATOR_USERNAME=${test.actuator.username}",
-                "ACTUATOR_PASSWORD=${test.actuator.password}",
-                "ACTUATOR_ROLES=${test.actuator.roles}"
-        })
+@TestPropertySource(locations = "classpath:application-test.properties")
 public abstract class BaseControllerIntegrationTest {
 
     @Autowired
@@ -37,16 +27,18 @@ public abstract class BaseControllerIntegrationTest {
     @Autowired
     protected ObjectMapper objectMapper;
 
-    protected String obtainValidJwt() throws Exception {
-        var loginRequest = new LoginRequest("user", "password");
-        MvcResult result = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
+    @Autowired
+    private WebApplicationContext context;
 
-        String responseBody = result.getResponse().getContentAsString();
-        LoginResponse loginResponse = objectMapper.readValue(responseBody, LoginResponse.class);
-        return loginResponse.jwtToken();
+    /**
+     * Set up MockMvc to integrate with Spring Security's test support.
+     * This allows us to use security-related features like mocking JWTs.
+     */
+    @BeforeEach
+    public void setup() {
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(context)
+                .apply(springSecurity())
+                .build();
     }
 }
