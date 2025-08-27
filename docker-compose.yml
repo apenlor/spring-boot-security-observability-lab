@@ -27,6 +27,26 @@ services:
       - lab-net
 
   # --------------------------------------------------------------------------
+  # Web Client Service: The OIDC client application
+  # --------------------------------------------------------------------------
+  web-client:
+    build:
+      context: .
+      dockerfile: web-client/Dockerfile
+    container_name: web-client
+    env_file:
+      - .env
+    ports:
+      - "8082:8082"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      resource-server:
+        condition: service_healthy
+    networks:
+      - lab-net
+
+  # --------------------------------------------------------------------------
   # Identity & Access Management Service: Keycloak
   # --------------------------------------------------------------------------
   keycloak:

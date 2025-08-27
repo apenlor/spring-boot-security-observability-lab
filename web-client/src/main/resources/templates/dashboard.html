@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>User Dashboard</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: auto; }
+        .header, .content { background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+        pre { background-color: #333; color: #fff; padding: 15px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; }
+        .button { display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; margin-right: 10px; }
+        .admin-btn { background-color: #ffc107; color: #212529; }
+        .logout-btn { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>User Dashboard</h1>
+        <p>Welcome, <strong th:text="${username}">User</strong>! This is a protected page.</p>
+        <a href="/logout" class="button logout-btn">Logout</a>
+    </div>
+
+    <div class="content">
+        <h2>Fetch Data from Resource Server</h2>
+        <p>Make secure, service-to-service API calls from this Web Client to the Resource Server.</p>
+
+        <a href="/fetch-data" class="button">Fetch Secure Data</a>
+
+        <a href="/fetch-admin-data" class="button admin-btn">Fetch Admin Data (Requires ADMIN Role)</a>
+
+        <!-- Display general secure data -->
+        <div th:if="${secureData}">
+            <h3>Response from /api/secure/data:</h3>
+            <pre><code th:text="${secureData}"></code></pre>
+        </div>
+
+        <div th:if="${adminData}">
+            <h3>Response from /api/secure/admin:</h3>
+            <pre><code th:text="${adminData}"></code></pre>
+        </div>
+    </div>
+
+    <div class="content">
+        <h2>Your OIDC Claims</h2>
+        <p>These are the claims contained within your ID Token, provided by Keycloak.</p>
+        <pre><code th:text="${claims}"></code></pre>
+    </div>
+</div>
+</body>
+</html>
