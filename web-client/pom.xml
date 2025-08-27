@@ -9,33 +9,26 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>resource-server</artifactId>
-    <name>resource-server</name>
-    <description>Lab Project: Resource Server for Security and Observability</description>
+    <artifactId>web-client</artifactId>
+    <name>web-client</name>
+    <description>Lab Project: OIDC Web Client for Demonstrating User-Facing Login</description>
 
     <dependencies>
-        <!-- Core Web and Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
-
-        <!-- Metrics & Observability -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
         <!-- Utils -->
@@ -44,15 +37,10 @@
             <artifactId>lombok</artifactId>
         </dependency>
 
-        <!-- Test dependencies -->
+        <!-- Test Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

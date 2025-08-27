@@ -1,13 +1,13 @@
 package com.apenlor.lab.resourceserver.demo;
 
 import com.apenlor.lab.resourceserver.BaseControllerIntegrationTest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -29,16 +29,6 @@ class ChaosControllerTest extends BaseControllerIntegrationTest {
     @MockitoBean
     private RandomnessProvider randomnessProvider;
 
-    private String validJwt;
-
-    /**
-     * Obtains a valid JWT before each test, as the demo endpoint is secured.
-     */
-    @BeforeEach
-    void setUp() throws Exception {
-        this.validJwt = obtainValidJwt();
-    }
-
     @Test
     @DisplayName("Given a provider that dictates success, should return 200 OK")
     void getFlakyRequest_whenProviderSucceeds_shouldReturn200() throws Exception {
@@ -47,9 +37,8 @@ class ChaosControllerTest extends BaseControllerIntegrationTest {
         // Configure the mock to force a successful outcome.
         when(randomnessProvider.nextInt(5)).thenReturn(1);
 
-        //  Act & Assert 
-        mockMvc.perform(get("/demo/flaky-request")
-                        .header("Authorization", "Bearer " + validJwt))
+        //  Act & Assert
+        mockMvc.perform(get("/demo/flaky-request").with(jwt()))
                 .andExpect(status().isOk());
     }
 
@@ -62,8 +51,7 @@ class ChaosControllerTest extends BaseControllerIntegrationTest {
         when(randomnessProvider.nextInt(5)).thenReturn(0);
 
         // Act & Assert
-        mockMvc.perform(get("/demo/flaky-request")
-                        .header("Authorization", "Bearer " + validJwt))
+        mockMvc.perform(get("/demo/flaky-request").with(jwt()))
                 .andExpect(status().isInternalServerError());
     }
 }

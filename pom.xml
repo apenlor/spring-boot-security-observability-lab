@@ -14,11 +14,12 @@
 
     <modules>
         <module>resource-server</module>
+        <module>web-client</module>
     </modules>
 
     <properties>
         <java.version>21</java.version>
-        <spring-boot.version>3.5.4</spring-boot.version>
+        <spring-boot.version>3.5.5</spring-boot.version>
         <lombok.version>1.18.38</lombok.version>
         <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
     </properties>
