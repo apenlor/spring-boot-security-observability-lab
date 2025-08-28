@@ -10,7 +10,7 @@ global:
 # ===================================================================
 scrape_configs:
   # -----------------------------------------------------------------
-  # Job: resource-server (Our Spring Boot Application)
+  # Job: resource-server (Our Spring Boot API Service)
   # -----------------------------------------------------------------
   - job_name: 'resource-server'
     metrics_path: '/actuator/prometheus'
@@ -21,3 +21,16 @@ scrape_configs:
     # Service Discovery
     static_configs:
       - targets: ['resource-server:9092']
+
+  # -----------------------------------------------------------------
+  # Job: web-client (Our Spring Boot Web Client)
+  # -----------------------------------------------------------------
+  - job_name: 'web-client'
+    metrics_path: '/actuator/prometheus'
+    basic_auth:
+      username_file: /run/secrets/actuator_username
+      password_file: /run/secrets/actuator_password
+
+    # Service Discovery
+    static_configs:
+      - targets: ['web-client:9093']
