@@ -34,3 +34,12 @@ scrape_configs:
     # Service Discovery
     static_configs:
       - targets: ['web-client:9093']
+
+  # -----------------------------------------------------------------
+  # Job: tempo (The metrics-generator from our tracing backend)
+  # -----------------------------------------------------------------
+  - job_name: 'tempo'
+    # Tempo exposes its generated metrics on the default /metrics endpoint
+    # of its main HTTP port. This endpoint does not require authentication.
+    static_configs:
+      - targets: ['tempo:3200']

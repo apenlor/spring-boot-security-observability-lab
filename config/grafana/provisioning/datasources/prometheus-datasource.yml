@@ -4,6 +4,7 @@ apiVersion: 1
 # A list of data sources to be provisioned.
 datasources:
   - name: Prometheus
+    uid: prometheus-lab-uid
     type: prometheus
     url: http://prometheus:9090
     # The access mode ("proxy"" means the Grafana backend makes the requests).
