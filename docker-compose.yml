@@ -14,6 +14,15 @@ services:
     environment:
       # We enable the 'chaos' profile to activate the ChaosController for demonstration.
       - SPRING_PROFILES_ACTIVE=chaos
+      # OpenTelemetry Agent Configuration
+      - JAVA_TOOL_OPTIONS=-javaagent:/app/opentelemetry-javaagent.jar
+      - OTEL_SERVICE_NAME=resource-server
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+    volumes:
+      - ./config/otel/opentelemetry-javaagent.jar:/app/opentelemetry-javaagent.jar:ro
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9092/actuator/health" ]
       interval: 10s
@@ -38,6 +47,17 @@ services:
       - .env
     ports:
       - "8082:8082"
+    environment:
+      # OpenTelemetry Agent Configuration
+      - JAVA_TOOL_OPTIONS=-javaagent:/app/opentelemetry-javaagent.jar
+      - OTEL_SERVICE_NAME=web-client
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+    volumes:
+      # Mount the agent JAR into a known location in the container.
+      - ./config/otel/opentelemetry-javaagent.jar:/app/opentelemetry-javaagent.jar:ro
     depends_on:
       keycloak:
         condition: service_healthy
