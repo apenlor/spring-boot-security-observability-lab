@@ -14,6 +14,15 @@ services:
     environment:
       # We enable the 'chaos' profile to activate the ChaosController for demonstration.
       - SPRING_PROFILES_ACTIVE=chaos
+      # OpenTelemetry Agent Configuration
+      - JAVA_TOOL_OPTIONS=-javaagent:/app/opentelemetry-javaagent.jar
+      - OTEL_SERVICE_NAME=resource-server
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+    volumes:
+      - ./config/otel/opentelemetry-javaagent.jar:/app/opentelemetry-javaagent.jar:ro
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9092/actuator/health" ]
       interval: 10s
@@ -38,6 +47,17 @@ services:
       - .env
     ports:
       - "8082:8082"
+    environment:
+      # OpenTelemetry Agent Configuration
+      - JAVA_TOOL_OPTIONS=-javaagent:/app/opentelemetry-javaagent.jar
+      - OTEL_SERVICE_NAME=web-client
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+    volumes:
+      # Mount the agent JAR into a known location in the container.
+      - ./config/otel/opentelemetry-javaagent.jar:/app/opentelemetry-javaagent.jar:ro
     depends_on:
       keycloak:
         condition: service_healthy
@@ -133,8 +153,24 @@ services:
       - actuator_password
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-    depends_on:
-      - resource-server
+      - '--web.enable-remote-write-receiver'
+    networks:
+      - lab-net
+
+  # --------------------------------------------------------------------------
+  # Grafana Tempo Service: For distributed tracing.
+  # --------------------------------------------------------------------------
+  tempo:
+    image: grafana/tempo:2.8.2
+    container_name: tempo
+    ports:
+      - "3200:3200"   # Tempo HTTP
+      - "4317:4317"   # OTLP gRPC
+      - "9411:9411"   # Zipkin
+    volumes:
+      - tempo-data:/var/tempo
+      - ./config/tempo/tempo.yml:/etc/tempo.yml
+    command: [ "-config.file=/etc/tempo.yml" ] # Config file will define storage
     networks:
       - lab-net
 
@@ -152,7 +188,10 @@ services:
       - ./config/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
       - ./config/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_started
+      tempo:
+        condition: service_started
     networks:
       - lab-net
 
@@ -165,6 +204,7 @@ secrets:
 volumes:
   grafana-data:
   keycloak-db-data:
+  tempo-data: # New volume for Tempo's trace data
 
 networks:
   lab-net:

@@ -1,0 +1,45 @@
+# --------------------------------------------------------------------------
+# Grafana Tempo Configuration for the Observability Lab (v2.8.2)
+# --------------------------------------------------------------------------
+# This configuration is designed for a single-binary, local deployment.
+
+# Configures the main Tempo server and its API endpoints.
+server:
+  http_listen_port: 3200
+
+# This section configures the distributors, which are the entry point for
+# trace data coming from the instrumented applications (the OTel agents).
+distributor:
+  receivers:
+    # We will primarily use the OpenTelemetry Protocol (OTLP).
+    otlp:
+      protocols:
+        # The gRPC endpoint is the most efficient and is what the Java agent will use.
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+metrics_generator:
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+
+# Main storage for trace data.
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+# This block activates the correct processing pipeline.
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [service-graphs, span-metrics]
+
+compactor:
+  compaction:
+    block_retention: 1h

@@ -1,0 +1,15 @@
+# This file configures the Tempo data source for Grafana.
+apiVersion: 1
+
+datasources:
+  - name: Tempo
+    uid: tempo-lab-uid
+    type: tempo
+    url: http://tempo:3200
+    access: proxy
+    isDefault: false
+    editable: true
+    # This section links this Tempo data source to our other observability pillars.
+    jsonData:
+      serviceMap:
+        datasourceUid: 'prometheus-lab-uid' # Must match the uid in prometheus-datasource.yml
