@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--
+    ====================================================================
+    Structured JSON Logging (Authoritative Configuration)
+    ====================================================================
+    -->
+    <springProperty scope="context" name="appName" source="spring.application.name"/>
+
+    <!--
+    Appender 1: The Synchronous JSON Console Appender (STDOUT_JSON)
+    This is the core appender that formats logs into JSON. It will be
+    wrapped by the async appender to prevent blocking application threads.
+    -->
+    <appender name="STDOUT_JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <!-- For local development: formats the JSON for human readability. -->
+            <jsonGeneratorDecorator class="net.logstash.logback.decorate.PrettyPrintingJsonGeneratorDecorator"/>
+
+            <!--
+                This provider add the full MDC context to the log output.
+            -->
+            <provider class="net.logstash.logback.composite.loggingevent.MdcJsonProvider"/>
+
+            <!--
+                This provider overrides the default stack trace formatting
+                to produce a cleaner, shortened output for exceptions.
+            -->
+            <provider class="net.logstash.logback.composite.loggingevent.StackTraceJsonProvider">
+                <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                    <maxDepthPerThrowable>30</maxDepthPerThrowable>
+                    <maxLength>2048</maxLength>
+                    <shortenedClassNameLength>20</shortenedClassNameLength>
+                    <rootCauseFirst>true</rootCauseFirst>
+                </throwableConverter>
+            </provider>
+        </encoder>
+    </appender>
+
+    <!--
+        Appender 2: The Asynchronous Wrapper (ASYNC_STDOUT)
+        This appender decouples application threads from log I/O. Log events
+        are placed on a queue, and a background thread handles writing.
+    -->
+    <appender name="ASYNC_STDOUT" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- Reference to the actual JSON writing appender. -->
+        <appender-ref ref="STDOUT_JSON"/>
+        <!-- Prevents the loss of important (ERROR level) logs if the queue is full. -->
+        <neverBlock>true</neverBlock>
+    </appender>
+
+    <!-- Set the root logger level to INFO. -->
+    <root level="INFO">
+        <!-- Direct all root logger output to our high-performance asynchronous appender. -->
+        <appender-ref ref="ASYNC_STDOUT"/>
+    </root>
+
+</configuration>
