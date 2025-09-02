@@ -2,6 +2,8 @@
 // Grafana Alloy Configuration
 // ===================================================================
 
+// --- LOGS PIPELINE ---
+
 // Responsible for sending logs to the Loki backend.
 loki.write "default" {
   endpoint {
@@ -18,7 +20,6 @@ discovery.docker "all_containers" {
 // add a clean 'container_name' label.
 discovery.relabel "filtered_containers" {
   targets = discovery.docker.all_containers.targets
-
   rule {
     source_labels = ["__meta_docker_network_name"]
     action        = "keep"
@@ -37,4 +38,26 @@ loki.source.docker "default" {
   host       = "unix:///var/run/docker.sock"
   targets    = discovery.relabel.filtered_containers.output
   forward_to = [loki.write.default.receiver]
+}
+
+// --- TRACES PIPELINE ---
+
+// Listens for incoming OpenTelemetry traces on the standard gRPC port.
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+// Forwards the received traces to the Tempo backend.
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true // We are on a trusted Docker network.
+    }
+  }
 }
