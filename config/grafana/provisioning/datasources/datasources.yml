@@ -5,7 +5,7 @@ datasources:
     uid: prometheus-lab-uid
     type: prometheus
     url: http://prometheus:9090
-    # The access mode ("proxy"" means the Grafana backend makes the requests).
+    # The access mode ("proxy" means the Grafana backend makes the requests)
     access: proxy
     isDefault: true
     editable: true
@@ -15,12 +15,18 @@ datasources:
     type: tempo
     url: http://tempo:3200
     access: proxy
-    isDefault: false
     editable: true
-    # This section links this Tempo data source to our other observability pillars.
+    # This section links this Tempo data source to our other observability pillars
     jsonData:
+      # Enables the graph
       serviceMap:
         datasourceUid: 'prometheus-lab-uid'
+      # Enables one-click navigation from a trace span directly to the logs for that trace
+      tracesToLogs:
+        datasourceUid: 'loki-lab-uid'
+        mappedTags:
+          - { key: 'service.name', value: 'container_name' }
+        filterByTraceID: true
 
   - name: Loki
     uid: loki-lab-uid

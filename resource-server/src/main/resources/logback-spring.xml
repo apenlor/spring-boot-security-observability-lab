@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!--
-    ====================================================================
-    Structured JSON Logging (Authoritative Configuration)
-    ====================================================================
-    -->
-    <springProperty scope="context" name="appName" source="spring.application.name"/>
-
-    <!--
     Appender 1: The Synchronous JSON Console Appender (STDOUT_JSON)
     This is the core appender that formats logs into JSON. It will be
     wrapped by the async appender to prevent blocking application threads.
