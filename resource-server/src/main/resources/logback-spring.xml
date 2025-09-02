@@ -14,9 +14,6 @@
     -->
     <appender name="STDOUT_JSON" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <!-- For local development: formats the JSON for human readability. -->
-            <jsonGeneratorDecorator class="net.logstash.logback.decorate.PrettyPrintingJsonGeneratorDecorator"/>
-
             <!--
                 This provider add the full MDC context to the log output.
             -->

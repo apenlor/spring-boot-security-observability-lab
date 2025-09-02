@@ -1,0 +1,40 @@
+# ===================================================================
+# Loki Configuration for Local Development (Loki v3.x Syntax)
+# ===================================================================
+server:
+  http_listen_port: 3100 # The port Loki listens on for log ingestion and API queries
+  grpc_listen_port: 0    # Disables the gRPC port, as we are only using HTTP
+
+common:
+  # The path prefix for Loki's internal data directories
+  path_prefix: /loki
+  # Defines the storage backend for both index and log chunks
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  # For a single-node setup, the replication factor is always 1
+  replication_factor: 1
+  # For our single instance, we use a simple in-memory store
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+
+# Configures how Loki indexes logs, allowing for fast retrieval
+schema_config:
+  configs:
+    - from: 2020-10-24 # A past date ensures this schema is always active
+      # tsdb is the recommended index store for single-node deployments
+      # It writes index files to the local filesystem
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+# While we are not defining alerts in this phase, the block must be present
+ruler:
+  # In a full setup, this would point to our Alertmanager service
+  alertmanager_url: http://localhost:9093

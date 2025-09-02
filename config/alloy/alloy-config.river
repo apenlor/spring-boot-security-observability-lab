@@ -1,0 +1,40 @@
+// ===================================================================
+// Grafana Alloy Configuration
+// ===================================================================
+
+// Responsible for sending logs to the Loki backend.
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// Connects to the Docker API and discovers ALL running containers.
+discovery.docker "all_containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Processes the list of discovered containers to filter them and
+// add a clean 'container_name' label.
+discovery.relabel "filtered_containers" {
+  targets = discovery.docker.all_containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_network_name"]
+    action        = "keep"
+    regex         = "spring-boot-security-observability-lab_lab-net"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container_name"
+  }
+}
+
+// Scrapes raw log lines from the filtered list of containers and
+// forwards them directly to the exporter.
+loki.source.docker "default" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.filtered_containers.output
+  forward_to = [loki.write.default.receiver]
+}
