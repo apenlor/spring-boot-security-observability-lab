@@ -41,6 +41,17 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+        </dependency>
+
+        <!-- Shared Lab Utilities -->
+        <dependency>
+            <groupId>com.apenlor.lab</groupId>
+            <artifactId>lab-aspects</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Utils -->
         <dependency>

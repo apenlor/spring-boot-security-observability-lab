@@ -1,5 +1,6 @@
 package com.apenlor.lab.webclient.controller;
 
+import com.apenlor.lab.aspects.audit.Auditable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -67,6 +68,7 @@ public class WebController {
      * @return The view name for the dashboard, populated with the fetched data or an error message.
      */
     @GetMapping("/fetch-data")
+    @Auditable
     public String fetchData(Model model, @AuthenticationPrincipal OidcUser oidcUser) {
         populateModelWithUserDetails(model, oidcUser);
         try {
@@ -97,6 +99,7 @@ public class WebController {
      * @return The view name for the dashboard, populated with admin data or a 403 Forbidden error message.
      */
     @GetMapping("/fetch-admin-data")
+    @Auditable
     public String fetchAdminData(Model model, @AuthenticationPrincipal OidcUser oidcUser) {
         populateModelWithUserDetails(model, oidcUser);
         try {

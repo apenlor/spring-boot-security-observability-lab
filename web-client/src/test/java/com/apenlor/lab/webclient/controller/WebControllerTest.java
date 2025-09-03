@@ -1,6 +1,9 @@
 package com.apenlor.lab.webclient.controller;
 
+import com.apenlor.lab.aspects.audit.AuditLogAspect;
 import com.apenlor.lab.webclient.config.SecurityConfig;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -25,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
@@ -42,14 +46,21 @@ class WebControllerTest {
     @MockitoBean(answers = Answers.RETURNS_DEEP_STUBS)
     private WebClient webClient;
 
-    // Although not directly used in our test logic, this mock is essential.
-    // Our @Import(SecurityConfig.class) statement loads the application's real security
-    // configuration, which requires a ClientRegistrationRepository bean for its constructor.
-    // This mock satisfies that dependency injection requirement for the test context to load
+    @MockitoBean
+    private AuditLogAspect auditLogAspect;
+
     @MockitoBean
     private ClientRegistrationRepository clientRegistrationRepository;
 
-    @Test
+    @BeforeEach
+    void setUp() throws Throwable {
+        // Configure the mock aspect to allow the actual method to be called, ignoring the @Auditable
+        when(auditLogAspect.audit(any(ProceedingJoinPoint.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, ProceedingJoinPoint.class).proceed());
+    }
+
+
+        @Test
     @DisplayName("GET / should return index page for unauthenticated users")
     void index_unauthenticated_returnsIndexPage() throws Exception {
         mockMvc.perform(get("/"))

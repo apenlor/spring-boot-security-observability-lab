@@ -17,7 +17,7 @@ services:
       # OpenTelemetry Agent Configuration
       - JAVA_TOOL_OPTIONS=-javaagent:/app/opentelemetry-javaagent.jar
       - OTEL_SERVICE_NAME=resource-server
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_METRICS_EXPORTER=none
       - OTEL_LOGS_EXPORTER=none
@@ -32,6 +32,8 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+      alloy:
+        condition: service_started
     networks:
       - lab-net
 
@@ -51,7 +53,7 @@ services:
       # OpenTelemetry Agent Configuration
       - JAVA_TOOL_OPTIONS=-javaagent:/app/opentelemetry-javaagent.jar
       - OTEL_SERVICE_NAME=web-client
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_METRICS_EXPORTER=none
       - OTEL_LOGS_EXPORTER=none
@@ -63,6 +65,8 @@ services:
         condition: service_healthy
       resource-server:
         condition: service_healthy
+      alloy:
+        condition: service_started
     networks:
       - lab-net
 
@@ -175,6 +179,43 @@ services:
       - lab-net
 
   # --------------------------------------------------------------------------
+  # Grafana Loki Service: For centralized log aggregation.
+  # --------------------------------------------------------------------------
+  loki:
+    image: grafana/loki:3.5.3
+    container_name: loki
+    # The auth flag is the way to run Loki in single-tenant mode
+    command: "-config.file=/etc/loki/loki-config.yml -auth.enabled=false"
+    volumes:
+      - ./config/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki/data
+    networks:
+      - lab-net
+
+  # --------------------------------------------------------------------------
+  # Grafana Alloy Service: The unified observability agent.
+  # --------------------------------------------------------------------------
+  alloy:
+    image: grafana/alloy:v1.10.2
+    container_name: alloy
+    volumes:
+      # =============================== SECURITY DISCLAIMER ===============================
+      # The read-only mount of the Docker socket is a privileged operation.
+      # For this lab, we accept this risk to enable a portable & simplified experience with automatic
+      # service discovery. For production environments, a non-socket-based approach like
+      # using a native Docker logging driver, or sidecar would be a more secure alternative.
+      # ===================================================================================
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/alloy/alloy-config.river:/etc/alloy/config.river:ro
+    command: "run /etc/alloy/config.river"
+    depends_on:
+      - loki
+      - tempo
+    networks:
+      - lab-net
+
+
+  # --------------------------------------------------------------------------
   # Grafana Service: For metrics visualization.
   # --------------------------------------------------------------------------
   grafana:
@@ -184,13 +225,15 @@ services:
       - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./config/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./config/grafana/provisioning/datasources/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
       - ./config/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
       - ./config/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       prometheus:
         condition: service_started
       tempo:
+        condition: service_started
+      loki:
         condition: service_started
     networks:
       - lab-net
@@ -204,7 +247,8 @@ secrets:
 volumes:
   grafana-data:
   keycloak-db-data:
-  tempo-data: # New volume for Tempo's trace data
+  tempo-data:
+  loki-data:
 
 networks:
   lab-net:

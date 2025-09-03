@@ -1,5 +1,6 @@
 package com.apenlor.lab.resourceserver.api;
 
+import com.apenlor.lab.aspects.audit.Auditable;
 import com.apenlor.lab.resourceserver.dto.ApiResponse;
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.Counter;
@@ -47,6 +48,7 @@ public class ApiController {
      * @return A standard API response containing a personalized secure message.
      */
     @GetMapping("/secure/data")
+    @Auditable
     @Timed(value = "http.requests.api", description = "Time taken to return secure API data", extraTags = {"endpoint", "secure"})
     public ResponseEntity<ApiResponse> getSecureData(Authentication authentication) {
         secureEndpointRequestCounter.increment();
@@ -64,6 +66,7 @@ public class ApiController {
      * @return A standard API response containing an admin-only message.
      */
     @GetMapping("/secure/admin")
+    @Auditable
     @PreAuthorize("hasRole('ADMIN')")
     @Timed(value = "http.requests.api", description = "Time taken to return admin API data", extraTags = {"endpoint", "admin"})
     public ResponseEntity<ApiResponse> getAdminData(Authentication authentication) {
