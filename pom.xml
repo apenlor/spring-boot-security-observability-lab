@@ -15,6 +15,7 @@
     <modules>
         <module>resource-server</module>
         <module>web-client</module>
+        <module>lab-aspects</module>
     </modules>
 
     <properties>
