@@ -46,6 +46,13 @@
             <artifactId>logstash-logback-encoder</artifactId>
         </dependency>
 
+        <!-- Shared Lab Utilities -->
+        <dependency>
+            <groupId>com.apenlor.lab</groupId>
+            <artifactId>lab-aspects</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Utils -->
         <dependency>
             <groupId>org.projectlombok</groupId>

@@ -1,0 +1,16 @@
+# Ignore Maven build output directories
+**/target
+
+# Ignore IDE-specific files
+.idea/
+*.iml
+
+# Ignore build log files
+build.log
+
+# Ignore git repository files
+.git/
+.gitignore
+
+# Ignore local environment files (the real one should never be in the image)
+.env
