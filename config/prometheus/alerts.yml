@@ -1,3 +1,44 @@
-# This file will contain Prometheus alerting rules.
+groups:
+  - name: application_alerts
+    rules:
+      # ===================================================================
+      # RULE 1: Technical Alert - High 5xx Server Error Rate
+      # ===================================================================
+      - alert: ApiServerErrorRateHigh
+        # This expression calculates the per-second rate of 5xx server errors
+        # originating specifically from our backend resource-server.
+        # It's designed to be triggered by the ChaosController's /api/chaos/error endpoint.
+        # Lower rate (>0) to simplify testing.
+        expr: sum(rate(http_server_requests_seconds_count{status=~"5..", job="resource-server"}[1m])) by (job) > 0
 
-groups: []
+        # Lab Setting: A short "for" duration for rapid testing. In a real-world
+        # scenario, this would be longer to avoid noise from transient issues.
+        for: 15s
+
+        labels:
+          severity: critical
+
+        annotations:
+          summary: "High 5xx server error rate on job '{{ $labels.job }}'."
+          description: "The API service '{{ $labels.job }}' is experiencing a high rate of 5xx server errors. Current value is {{ $value | printf \"%.2f\" }} errors/sec."
+          runbook_url: "https://internal-wiki.example.com/security/runbooks/api-error-rate"
+
+      # ===================================================================
+      # RULE 2: Security Alert - High 4xx Client Error Rate (Admin Endpoint)
+      # ===================================================================
+      - alert: UnauthorizedAdminAccessSpike
+        # This expression monitors for a spike in client errors (4xx) specifically on the
+        # privileged /api/secure/admin endpoint. Any client error here is a significant security signal,
+        # indicating misconfigured clients or malicious probing. Lower rate (>0) to simplify testing.
+        expr: sum(rate(http_server_requests_seconds_count{uri="/api/secure/admin", status=~"4..", job="resource-server"}[1m])) by (job) > 0
+
+        # Also set low for demonstration purposes.
+        for: 15s
+
+        labels:
+          severity: warning
+
+        annotations:
+          summary: "Spike in unauthorized access attempts to admin endpoint."
+          description: "A high rate of failed attempts (4xx errors) to access the admin endpoint on '{{ $labels.job }}' has been detected. The current rate is {{ $value | printf \"%.2f\" }} req/sec."
+          runbook_url: "https://internal-wiki.example.com/security/runbooks/unauthorized-admin-access"
