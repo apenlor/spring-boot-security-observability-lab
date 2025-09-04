@@ -1,6 +1,7 @@
-package com.apenlor.lab.resourceserver.demo;
+package com.apenlor.lab.resourceserver.api;
 
 import com.apenlor.lab.resourceserver.dto.ApiResponse;
+import com.apenlor.lab.resourceserver.util.RandomnessProvider;
 import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * demo endpoints, or experimental features in an application codebase.
  */
 @RestController
-@RequestMapping("/demo")
+@RequestMapping("/api/chaos")
 @Profile("chaos")
 @Slf4j
 @RequiredArgsConstructor
@@ -55,5 +56,15 @@ public class ChaosController {
         }
 
         return ResponseEntity.ok(new ApiResponse("Successful but flaky response after " + delay + "ms."));
+    }
+
+    /**
+     * An endpoint that is guaranteed to fail every time it is called.
+     * This provides a reliable mechanism for testing our alerting rules for 5xx error rates.
+     */
+    @GetMapping("/error")
+    public void getGuaranteedError() {
+        log.error("Simulating a guaranteed failure for alert testing!");
+        throw new RuntimeException("Simulated guaranteed internal server error!");
     }
 }

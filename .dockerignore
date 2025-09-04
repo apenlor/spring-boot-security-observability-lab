@@ -14,3 +14,9 @@ build.log
 
 # Ignore local environment files (the real one should never be in the image)
 .env
+
+# Ignore observability stack configs not needed in the app image
+config/
+
+# Ignore persistent data volumes
+data/

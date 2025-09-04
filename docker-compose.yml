@@ -152,12 +152,36 @@ services:
       - "9090:9090"
     volumes:
       - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./config/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
     secrets:
       - actuator_username
       - actuator_password
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--web.enable-remote-write-receiver'
+      - '--web.external-url=http://localhost:9090'
+    networks:
+      - lab-net
+
+  # --------------------------------------------------------------------------
+  # Alertmanager Service: For alert management and routing.
+  # --------------------------------------------------------------------------
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9093/-/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - lab-net
 
@@ -235,6 +259,8 @@ services:
         condition: service_started
       loki:
         condition: service_started
+      alertmanager:
+        condition: service_healthy
     networks:
       - lab-net
 
@@ -249,6 +275,7 @@ volumes:
   keycloak-db-data:
   tempo-data:
   loki-data:
+  alertmanager-data:
 
 networks:
   lab-net:

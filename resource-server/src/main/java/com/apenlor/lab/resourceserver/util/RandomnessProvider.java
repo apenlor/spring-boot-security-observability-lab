@@ -1,4 +1,4 @@
-package com.apenlor.lab.resourceserver.demo;
+package com.apenlor.lab.resourceserver.util;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
