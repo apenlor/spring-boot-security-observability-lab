@@ -21,7 +21,7 @@ FROM dependency_builder AS app_builder
 COPY . .
 
 # Build only the web-client and its required dependencies.
-RUN mvn clean install -pl web-client -am -DskipTests
+RUN mvn clean package -pl web-client -am -DskipTests
 
 # ===================================================================
 # Stage 3: Final image

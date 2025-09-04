@@ -25,6 +25,7 @@
         <lombok.version>1.18.38</lombok.version>
         <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
         <springdoc-openapi.version>2.8.12</springdoc-openapi.version>
+        <dependency-check-maven.version>12.1.3</dependency-check-maven.version>
     </properties>
 
     <dependencyManagement>
@@ -79,8 +80,37 @@
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>${dependency-check-maven.version}</version>
+                    <configuration>
+                        <!-- Fail the build if any dependency has a CVSS score of 7.0 or higher -->
+                        <failBuildOnCVSS>7.0</failBuildOnCVSS>
+                        <!--
+                        Specify a suppression file to manage false positives or accepted risks.
+                        This is a critical best practice for maintaining a clean build.
+                        <suppressionFiles>
+                            <suppressionFile>owasp-suppressions.xml</suppressionFile>
+                        </suppressionFiles>
+                        -->
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
 </project>

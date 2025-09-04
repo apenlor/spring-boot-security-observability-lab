@@ -21,7 +21,7 @@ FROM dependency_builder AS app_builder
 COPY . .
 
 # Build only the resource-server and its required dependencies.
-RUN mvn clean install -pl resource-server -am -DskipTests
+RUN mvn clean package -pl resource-server -am -DskipTests
 
 # ===================================================================
 # Stage 3: Final image
