@@ -1,0 +1,48 @@
+global:
+# --- Example: Global Slack API URL ---
+# slack_api_url: '<your-global-slack-webhook-url>'
+
+# The root route on which each incoming alert enters
+route:
+  # For this lab, we use a 'null' receiver to prevent any actual notifications from being sent
+  receiver: 'null-receiver'
+
+  # --- Example: notification settings ---
+  #  group_by: ['alertname', 'job']
+  #  group_wait: 30s
+  #  group_interval: 5m
+  #  repeat_interval: 1h
+
+  # --- Example: Sub-route ---
+  # The sub-routes. Alertmanager matches alerts against sub-routes recursively.
+  # routes:
+  #   - receiver: 'critical-alerts-webhook'
+  #     # When an alert has a label 'severity' that is 'critical'...
+  #     matchers:
+  #       - severity = critical
+  #     # ...it will be sent to the 'critical-alerts-webhook' receiver instead of the parent's.
+  #     continue: true # Set to true if you want it to also match subsequent sibling routes.
+
+# A list of receivers that define how notifications are sent
+receivers:
+  # This receiver is a blackhole, for the Lab is a perfect option.
+  - name: 'null-receiver'
+
+  # --- Example: Generic Webhook Receiver ---
+  # - name: 'critical-alerts-webhook'
+  #   webhook_configs:
+  #     # URL to send POST requests to (e.g., a custom integration, PagerDuty, etc.).
+  #     - url: 'http://some-webhook-receiver:8080/notifications'
+  #       send_resolved: true
+
+  # --- Example: Slack Receiver ---
+  # - name: 'slack-notifications'
+  #   slack_configs:
+  #     # If a global "slack_api_url" is not defined, it must be specified here.
+  #     # This also allows overriding the global URL for a specific receiver.
+  #     # api_url: '<your-channel-specific-slack-webhook-url>'
+  #     - channel: '#alerts'
+  #       send_resolved: true
+  #       # You can customize the message title, text, etc. using templates.
+  #       # title: '{{ .CommonLabels.alertname }} - {{ .Status | toUpper }}'
+  #       # text: '{{ .CommonAnnotations.summary }}'
