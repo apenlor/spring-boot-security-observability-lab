@@ -8,8 +8,11 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import reactor.core.publisher.Mono;
 
 /**
  * Main controller for the web application.
@@ -21,6 +24,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 public class WebController {
 
     public static final String DASHBOARD_TEMPLATE = "dashboard";
+    private static final String REDIRECT_DASHBOARD = "redirect:/dashboard";
     private final WebClient webClient;
 
     @Value("${resource-server.url}")
@@ -119,6 +123,63 @@ public class WebController {
             model.addAttribute("adminData", errorMessage);
         }
         return DASHBOARD_TEMPLATE;
+    }
+
+    /**
+     * Handles POST requests from the UI to trigger a guaranteed 5xx error in the resource-server.
+     * This serves as the test harness for the "ApiErrorRateHigh" alert.
+     *
+     * @param redirectAttributes Used to pass feedback messages back to the dashboard view.
+     * @return A redirect instruction to the user's browser, refreshing the dashboard.
+     */
+    @PostMapping("/trigger-5xx-error")
+    @Auditable
+    public String trigger5xxError(RedirectAttributes redirectAttributes) {
+        log.info("Intentionally triggering a 5xx server error for alert testing.");
+        webClient.get()
+                .uri(resourceServerUrl + "/api/chaos/error")
+                .retrieve()
+                .toBodilessEntity()
+                .onErrorResume(WebClientResponseException.class, ex -> Mono.empty()) // Handle error gracefully.
+                .block();
+
+        redirectAttributes.addFlashAttribute("feedbackMessage", "Successfully triggered a 5xx error in the resource-server.");
+        redirectAttributes.addFlashAttribute("isError", false);
+        return REDIRECT_DASHBOARD;
+    }
+
+    /**
+     * Handles POST requests from the UI to attempt access to the admin endpoint.
+     * This serves as the test harness for the "UnauthorizedAdminAccessSpike" alert. The outcome
+     * depends on the logged-in user's roles.
+     *
+     * @param oidcUser           The authenticated user, used to log context.
+     * @param redirectAttributes Used to pass feedback messages back to the dashboard view.
+     * @return A redirect instruction to the user's browser, refreshing the dashboard.
+     */
+    @PostMapping("/trigger-403-error")
+    @Auditable
+    public String trigger403Error(@AuthenticationPrincipal OidcUser oidcUser, RedirectAttributes redirectAttributes) {
+        log.info("User '{}' is intentionally attempting to access a privileged admin endpoint.", oidcUser.getPreferredUsername());
+        webClient.get()
+                .uri(resourceServerUrl + "/api/secure/admin")
+                .retrieve()
+                .toBodilessEntity()
+                .onErrorResume(WebClientResponseException.class, ex -> {
+                    if (ex.getStatusCode().is4xxClientError()) {
+                        log.warn("Successfully received expected 4xx client error (likely 403 Forbidden).");
+                        redirectAttributes.addFlashAttribute("feedbackMessage", "Successfully triggered a " + ex.getStatusCode() + " error from the resource-server.");
+                        redirectAttributes.addFlashAttribute("isError", false);
+                    } else {
+                        log.error("Received an unexpected error when attempting to trigger a 403.", ex);
+                        redirectAttributes.addFlashAttribute("feedbackMessage", "An unexpected error occurred: " + ex.getMessage());
+                        redirectAttributes.addFlashAttribute("isError", true);
+                    }
+                    return Mono.empty(); // Consume the error and complete the reactive chain.
+                })
+                .block();
+
+        return REDIRECT_DASHBOARD;
     }
 
     /**

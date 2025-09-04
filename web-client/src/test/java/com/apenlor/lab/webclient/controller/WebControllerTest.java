@@ -10,6 +10,8 @@ import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
@@ -31,8 +33,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(WebController.class)
@@ -60,7 +64,7 @@ class WebControllerTest {
     }
 
 
-        @Test
+    @Test
     @DisplayName("GET / should return index page for unauthenticated users")
     void index_unauthenticated_returnsIndexPage() throws Exception {
         mockMvc.perform(get("/"))
@@ -132,6 +136,50 @@ class WebControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("dashboard"))
                 .andExpect(model().attribute("adminData", containsString("403 FORBIDDEN")));
+    }
+
+    @Test
+    @DisplayName("POST /trigger-5xx-error should redirect to dashboard with success flash attribute")
+    void trigger5xxError_shouldRedirectWithSuccessFlashAttribute() throws Exception {
+        OidcUser mockUser = createMockOidcUser();
+
+        // We simulate a successful call that is handled by the controller.
+        when(webClient.get().uri(anyString()).retrieve().toBodilessEntity())
+                .thenReturn(Mono.empty()); // Assume the call completes, even if it's an error handled internally.
+
+        mockMvc.perform(post("/trigger-5xx-error")
+                        .with(oidcLogin().oidcUser(mockUser))
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/dashboard"))
+                .andExpect(flash().attribute("feedbackMessage", "Successfully triggered a 5xx error in the resource-server."))
+                .andExpect(flash().attribute("isError", false));
+    }
+
+    @Test
+    @DisplayName("POST /trigger-403-error should redirect to dashboard with success flash attribute on 4xx error")
+    void trigger403Error_on4xxError_shouldRedirectWithSuccessFlashAttribute() throws Exception {
+        OidcUser mockUser = createMockOidcUser();
+
+        // Simulate the WebClient throwing a 403 Forbidden exception.
+        var exception = new WebClientResponseException(
+                HttpStatus.FORBIDDEN.value(),
+                "Forbidden",
+                HttpHeaders.EMPTY,
+                null,
+                null
+        );
+
+        when(webClient.get().uri(anyString()).retrieve().toBodilessEntity())
+                .thenReturn(Mono.error(exception));
+
+        mockMvc.perform(post("/trigger-403-error")
+                        .with(oidcLogin().oidcUser(mockUser))
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/dashboard"))
+                .andExpect(flash().attribute("feedbackMessage", "Successfully triggered a 403 FORBIDDEN error from the resource-server."))
+                .andExpect(flash().attribute("isError", false));
     }
 
     /**

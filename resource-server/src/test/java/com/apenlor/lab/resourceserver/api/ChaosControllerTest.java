@@ -1,6 +1,7 @@
-package com.apenlor.lab.resourceserver.demo;
+package com.apenlor.lab.resourceserver.api;
 
 import com.apenlor.lab.resourceserver.BaseControllerIntegrationTest;
+import com.apenlor.lab.resourceserver.util.RandomnessProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.ActiveProfiles;
@@ -14,44 +15,40 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for the ChaosController.
  * <p>
- * Architectural Note:
  * This test class uses @ActiveProfiles("chaos") to ensure that the ChaosController
  * and its dependencies are loaded into the application context.
  * It uses @MockBean to replace the real RandomnessProvider with a mock, allowing us
- * to write 100% deterministic tests for behavior that is normally random.
+ * to write deterministic tests for behavior that is normally random.
  */
 @ActiveProfiles("chaos")
-@DisplayName("Demo: /demo Endpoint (Chaos Profile)")
+@DisplayName("API: /api/chaos Endpoints (Integration Test)")
 class ChaosControllerTest extends BaseControllerIntegrationTest {
 
-    // By using @MockitoBean, Spring's test context will replace the real
-    // RandomnessProvider bean with this mock instance wherever it is injected.
     @MockitoBean
     private RandomnessProvider randomnessProvider;
 
     @Test
-    @DisplayName("Given a provider that dictates success, should return 200 OK")
-    void getFlakyRequest_whenProviderSucceeds_shouldReturn200() throws Exception {
-        // Arrange
-        when(randomnessProvider.nextInt(300)).thenReturn(100);
-        // Configure the mock to force a successful outcome.
-        when(randomnessProvider.nextInt(5)).thenReturn(1);
+    @DisplayName("GET /api/chaos/error should always return 500 Internal Server Error")
+    void getGuaranteedError_shouldAlwaysReturn500() throws Exception {
+        mockMvc.perform(get("/api/chaos/error").with(jwt()))
+                .andExpect(status().isInternalServerError());
+    }
 
-        //  Act & Assert
-        mockMvc.perform(get("/demo/flaky-request").with(jwt()))
+    @Test
+    @DisplayName("GET /api/chaos/flaky-request: Given a provider that dictates success, should return 200 OK")
+    void getFlakyRequest_whenProviderSucceeds_shouldReturn200() throws Exception {
+        when(randomnessProvider.nextInt(5)).thenReturn(1); // Any non-zero value
+
+        mockMvc.perform(get("/api/chaos/flaky-request").with(jwt()))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("Given a provider that dictates failure, should return 500 Internal Server Error")
+    @DisplayName("GET /api/chaos/flaky-request: Given a provider that dictates failure, should return 500 Internal Server Error")
     void getFlakyRequest_whenProviderFails_shouldReturn500() throws Exception {
-        // Arrange
-        when(randomnessProvider.nextInt(300)).thenReturn(100);
-        // Configure the mock to force a failure outcome.
         when(randomnessProvider.nextInt(5)).thenReturn(0);
 
-        // Act & Assert
-        mockMvc.perform(get("/demo/flaky-request").with(jwt()))
+        mockMvc.perform(get("/api/chaos/flaky-request").with(jwt()))
                 .andExpect(status().isInternalServerError());
     }
 }

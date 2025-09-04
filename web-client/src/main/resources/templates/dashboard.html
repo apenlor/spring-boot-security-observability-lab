@@ -4,13 +4,21 @@
     <meta charset="UTF-8">
     <title>User Dashboard</title>
     <style>
-        body { font-family: sans-serif; margin: 40px; }
+        body { font-family: sans-serif; margin: 40px; background-color: #e9ecef; }
         .container { max-width: 800px; margin: auto; }
-        .header, .content { background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+        .header, .content { background-color: #ffffff; padding: 20px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         pre { background-color: #333; color: #fff; padding: 15px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; }
-        .button { display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; margin-right: 10px; }
-        .admin-btn { background-color: #ffc107; color: #212529; }
-        .logout-btn { background-color: #dc3545; }
+        .button { display: inline-block; padding: 10px 20px; border: none; font-size: 16px; cursor: pointer; text-align: center; text-decoration: none; border-radius: 5px; margin-right: 10px; margin-top: 5px; }
+        .button-primary { background-color: #28a745; color: white; }
+        .button-warning { background-color: #ffc107; color: #212529; }
+        .button-danger { background-color: #dc3545; color: white; }
+        .button-secondary { background-color: #6c757d; color: white; }
+        .alert-panel { border-left: 5px solid #fd7e14; }
+        .alert-info { background-color: #e2e3e5; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 14px; }
+        .feedback { padding: 10px; margin-bottom: 15px; border-radius: 5px; }
+        .feedback.success { background-color: #d4edda; color: #155724; }
+        .feedback.error { background-color: #f8d7da; color: #721c24; }
+
     </style>
 </head>
 <body>
@@ -18,26 +26,56 @@
     <div class="header">
         <h1>User Dashboard</h1>
         <p>Welcome, <strong th:text="${username}">User</strong>! This is a protected page.</p>
-        <a href="/logout" class="button logout-btn">Logout</a>
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+            <button type="submit" class="button button-danger">Logout</button>
+        </form>
+    </div>
+
+    <!-- Feedback message area -->
+    <div th:if="${feedbackMessage}" class="feedback"
+         th:classappend="${isError} ? 'error' : 'success'"
+         th:text="${feedbackMessage}">
     </div>
 
     <div class="content">
         <h2>Fetch Data from Resource Server</h2>
         <p>Make secure, service-to-service API calls from this Web Client to the Resource Server.</p>
 
-        <a href="/fetch-data" class="button">Fetch Secure Data</a>
+        <form th:action="@{/fetch-data}" method="get" style="display:inline-block;">
+            <button type="submit" class="button button-primary">Fetch Secure Data</button>
+        </form>
 
-        <a href="/fetch-admin-data" class="button admin-btn">Fetch Admin Data (Requires ADMIN Role)</a>
+        <form th:action="@{/fetch-admin-data}" method="get" style="display:inline-block;">
+            <button type="submit" class="button button-warning">Fetch Admin Data</button>
+        </form>
 
-        <!-- Display general secure data -->
-        <div th:if="${secureData}">
-            <h3>Response from /api/secure/data:</h3>
-            <pre><code th:text="${secureData}"></code></pre>
+        <!-- Display data -->
+        <div th:if="${secureData != null or adminData != null}">
+            <div th:if="${secureData}">
+                <h3>Response from /api/secure/data:</h3>
+                <pre><code th:text="${secureData}"></code></pre>
+            </div>
+            <div th:if="${adminData}">
+                <h3>Response from /api/secure/admin:</h3>
+                <pre><code th:text="${adminData}"></code></pre>
+            </div>
         </div>
+    </div>
 
-        <div th:if="${adminData}">
-            <h3>Response from /api/secure/admin:</h3>
-            <pre><code th:text="${adminData}"></code></pre>
+    <div class="content alert-panel">
+        <h2>Alerting Test Panel</h2>
+        <p>Use these controls to generate specific error conditions in the backend service. Click the buttons repeatedly
+            to generate enough traffic to trigger our rate-based alerts in Prometheus.</p>
+        <form th:action="@{/trigger-5xx-error}" method="post" style="display: inline-block;">
+            <button type="submit" class="button button-secondary">Generate a 5xx Server Error</button>
+        </form>
+        <form th:action="@{/trigger-403-error}" method="post" style="display: inline-block;">
+            <button type="submit" class="button button-secondary">Attempt Unauthorized Admin Access (403)</button>
+        </form>
+        <div class="alert-info">
+            <strong>Note:</strong> The "Attempt Admin Access" button will reliably trigger a 403 Forbidden error when
+            logged in as <strong>lab-user</strong>. It will succeed (200 OK) when logged in as
+            <strong>lab-admin</strong>.
         </div>
     </div>
 
