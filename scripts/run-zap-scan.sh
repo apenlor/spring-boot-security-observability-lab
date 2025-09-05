@@ -37,7 +37,7 @@ else
     echo "ERROR: Neither 'docker compose' nor 'docker-compose' could be found." >&2
     exit 1
 fi
-echo "Using compose command: '${COMPOSE_CMD}'"
+echo "Using compose command: '${COMPOSE_CMD} ${COMPOSE_OPTIONS}'"
 
 # --- Main Script ---
 mkdir -p ${REPORT_DIR}
