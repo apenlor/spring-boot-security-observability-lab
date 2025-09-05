@@ -51,6 +51,9 @@ sleep 30
 #    -g: Generate -> Creates a config file with issues to ignore (for managing false positives).
 #    -r: Report -> The output HTML report file.
 echo "Running OWASP ZAP baseline scan against ${TARGET_URL}..."
+
+chmod 777 ${REPORT_DIR}
+
 docker run --rm --network=host \
   -v "$(pwd)/${REPORT_DIR}:/zap/wrk/" \
   "${ZAP_IMAGE}" zap-baseline.py \
