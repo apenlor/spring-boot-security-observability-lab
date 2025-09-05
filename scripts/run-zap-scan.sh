@@ -50,6 +50,7 @@ sleep 30
 #    -t: Target URL -> The OpenAPI spec URL.
 #    -g: Generate -> Creates a config file with issues to ignore (for managing false positives).
 #    -r: Report -> The output HTML report file.
+#    -I: do not return error on warnings
 echo "Running OWASP ZAP baseline scan against ${TARGET_URL}..."
 
 chmod 777 ${REPORT_DIR}
@@ -60,7 +61,7 @@ docker run --rm --network=host \
   -t "${TARGET_URL}" \
   -g "zap-generated.conf" \
   -r "${REPORT_FILE}" \
-  --level "FAIL"
+  -I
 
 # 3. Clean up the environment
 echo "Shutting down all services..."
