@@ -59,7 +59,8 @@ docker run --rm --network=host \
   "${ZAP_IMAGE}" zap-baseline.py \
   -t "${TARGET_URL}" \
   -g "zap-generated.conf" \
-  -r "${REPORT_FILE}"
+  -r "${REPORT_FILE}" \
+  --level "FAIL"
 
 # 3. Clean up the environment
 echo "Shutting down all services..."
