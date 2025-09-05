@@ -15,17 +15,8 @@ ZAP_IMAGE="zaproxy/zap-stable"
 # In CI, we use the committed .env.ci file with test defaults.
 # Locally, we prefer the user's private .env file.
 if [[ "${GITHUB_ACTIONS}" == "true" ]]; then
-  ENV_FILE=".env.ci"
-else
-  ENV_FILE=".env"
-fi
-
-if [ -f "${ENV_FILE}" ]; then
-  COMPOSE_OPTIONS="--env-file ${ENV_FILE}"
-  echo "Using environment file: ${ENV_FILE}"
-else
-  echo "ERROR: Environment file '${ENV_FILE}' not found." >&2
-  exit 1
+  echo "CI environment detected. Creating .env file from .env.ci"
+  cp .env.ci .env
 fi
 
 # --- Environment-aware command detection ---
@@ -37,7 +28,7 @@ else
     echo "ERROR: Neither 'docker compose' nor 'docker-compose' could be found." >&2
     exit 1
 fi
-echo "Using compose command: '${COMPOSE_CMD} ${COMPOSE_OPTIONS}'"
+echo "Using compose command: '${COMPOSE_CMD}'"
 
 # --- Main Script ---
 mkdir -p ${REPORT_DIR}
@@ -45,10 +36,10 @@ echo "Starting DAST Scan Orchestration..."
 
 # 1. Start the service to be scanned in the background
 echo "Starting dependent services (Keycloak) and target service (${SERVICE_NAME})..."
-${COMPOSE_CMD} ${COMPOSE_OPTIONS} up -d postgres keycloak
+${COMPOSE_CMD} up -d postgres keycloak
 echo "Waiting 30 seconds for Keycloak to initialize..."
 sleep 30
-${COMPOSE_CMD} ${COMPOSE_OPTIONS} up -d --build ${SERVICE_NAME}
+${COMPOSE_CMD} up -d --build ${SERVICE_NAME}
 
 echo "Waiting 30 seconds for application (${SERVICE_NAME}) to be fully available..."
 sleep 30
@@ -69,6 +60,6 @@ docker run --rm --network=host \
 
 # 3. Clean up the environment
 echo "Shutting down all services..."
-${COMPOSE_CMD} ${COMPOSE_OPTIONS} down
+${COMPOSE_CMD} down
 
 echo "✅ DAST scan complete. Report available in ./${REPORT_DIR}/${REPORT_FILE}"
