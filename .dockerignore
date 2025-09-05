@@ -1,22 +1,37 @@
-# Ignore Maven build output directories
-**/target
-
-# Ignore IDE-specific files
-.idea/
-*.iml
-
-# Ignore build log files
-build.log
-
-# Ignore git repository files
+# Git repository files
 .git/
 .gitignore
+.dockerignore
 
-# Ignore local environment files (the real one should never be in the image)
+# IDE-specific files
+.idea/
+*.iml
+.vscode/
+
+# Maven wrapper (not used in our Docker build)
+mvnw
+mvnw.cmd
+.mvn/
+
+# Build output directories (handled by multi-stage build)
+**/target
+
+# Local environment files (secrets should never be in the image)
 .env
 
-# Ignore observability stack configs not needed in the app image
+# Generated security reports and data
+reports/
+dependency-check-data/
+
+# Scripts used for orchestration, not for the application artifact
+scripts/
+
+# Observability stack configs not needed in the app image
 config/
 
-# Ignore persistent data volumes
+# Persistent data volumes
 data/
+
+# Documentation and license files
+README.md
+LICENSE

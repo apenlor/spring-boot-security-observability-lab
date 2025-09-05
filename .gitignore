@@ -43,15 +43,13 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-### Security & Reports ###
-# ZAP reports directory
-reports/
-
-# OWASP Dependency-Check reports
-dependency-check-report.*
-
+### Lab Specific ###
 # Local environment variables
 .env
 
 # Persistent data volumes
 /data/
+
+# Generated Security Reports & Data
+reports/
+dependency-check-data/
