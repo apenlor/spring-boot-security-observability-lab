@@ -10,6 +10,17 @@ REPORT_DIR="reports"
 REPORT_FILE="zap-report.html"
 ZAP_IMAGE="zaproxy/zap-stable"
 
+# --- Environment-aware command detection ---
+if docker compose &> /dev/null; then
+    COMPOSE_CMD="docker compose"
+elif docker-compose &> /dev/null; then
+    COMPOSE_CMD="docker-compose"
+else
+    echo "ERROR: Neither 'docker compose' nor 'docker-compose' could be found." >&2
+    exit 1
+fi
+echo "Using compose command: '${COMPOSE_CMD}'"
+
 # Create reports directory if it doesn't exist
 mkdir -p ${REPORT_DIR}
 
@@ -20,11 +31,11 @@ echo "Starting DAST Scan Orchestration..."
 # 1. Start the service to be scanned in the background
 echo "Starting dependent services (Keycloak) and target service (${SERVICE_NAME})..."
 # We bring up dependencies first to ensure they are ready.
-docker-compose up -d postgres keycloak
+${COMPOSE_CMD} up -d postgres keycloak
 # Give Keycloak a moment to initialize before the resource-server starts and tries to connect.
 echo "Waiting 30 seconds for Keycloak to initialize..."
 sleep 30
-docker-compose up -d --build ${SERVICE_NAME}
+${COMPOSE_CMD} up -d --build ${SERVICE_NAME}
 
 echo "Waiting 30 seconds for application (${SERVICE_NAME}) to be fully available..."
 sleep 30
@@ -44,8 +55,7 @@ docker run --rm --network=host \
   -r "${REPORT_FILE}"
 
 # 3. Clean up the environment
-#    Using `docker-compose down` ensures all services are stopped and networks are removed.
 echo "Shutting down all services..."
-docker-compose down
+${COMPOSE_CMD} down
 
 echo "✅ DAST scan complete. Report available in ./${REPORT_DIR}/${REPORT_FILE}"
