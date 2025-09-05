@@ -26,6 +26,13 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private static final String[] PUBLIC_API_PATHS = {
+            "/api/public/info",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html"
+    };
+
     /**
      * Configures the security filter chain for the management endpoints (Actuator).
      * <p>
@@ -69,7 +76,7 @@ public class SecurityConfig {
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/public/info").permitAll()
+                        .requestMatchers(PUBLIC_API_PATHS).permitAll()
                         .anyRequest().authenticated()
                 )
                 // Configure the application as an OAuth2 Resource Server & use custom JWT converter
