@@ -1,4 +1,4 @@
-name: Java CI & Docker Build
+name: Java CI, Security Scans & Docker Build
 
 # This workflow will run on pushes to the 'main' branch and on pull requests targeting 'main'
 on:
@@ -9,34 +9,47 @@ on:
 
 jobs:
   build_and_test:
-    name: Build & Test Application
+    name: Build, Test & SCA Scan
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-
       - name: Checkout repository
-        uses: actions/checkout@v4
+        # actions/checkout@v5.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+      # Caching the NVD database is critical for performance. It will be restored on subsequent runs.
+      - name: Cache OWASP Dependency-Check NVD
+        # actions/cache@v4.2.4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          # The key invalidates the cache if a pom.xml file changes.
+          key: ${{ runner.os }}-dependency-check-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-dependency-check-
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        # actions/setup-java@v5.0.0
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: maven
 
-      # The build will fail if any tests fail, blocking the PR from merging.
-      - name: Build and test with Maven
+      # The 'verify' lifecycle phase automatically triggers the dependency-check plugin.
+      # The build will fail if any high-severity CVEs are found.
+      - name: Build, Test, and Scan Dependencies with Maven
         run: ./mvnw -B clean verify
 
-  build_docker_image:
-    name: Build Docker Image
-    # This job will only run if the 'build_and_test' job succeeds.
+  build_and_scan_images:
+    name: Build & Scan Docker Images
     needs: build_and_test
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        # actions/checkout@v5.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
 
       - name: Set up QEMU
         # docker/setup-qemu-action@v3.6.0
@@ -46,12 +59,67 @@ jobs:
         # docker/setup-buildx-action@v3.11.1
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
 
-      - name: Build the Docker image
-        # This command proves that our Dockerfile is valid and can be built.
-        # We don't push the image in this CI workflow, as that is a CD (Continuous Deployment) task.
+      - name: Build resource-server image
         run: |
           docker buildx build \
             --platform linux/amd64 \
+            --load \
             -t security-lab/resource-server:ci-build \
             -f ./resource-server/Dockerfile \
             .
+
+      - name: Scan resource-server image with Trivy
+        # aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        with:
+          image-ref: 'security-lab/resource-server:ci-build'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Build web-client image
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --load \
+            -t security-lab/web-client:ci-build \
+            -f ./web-client/Dockerfile \
+            .
+
+      - name: Scan web-client image with Trivy
+        # aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        with:
+          image-ref: 'security-lab/web-client:ci-build'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  security_scan_dast:
+    name: DAST Scan with OWASP ZAP
+    needs: build_and_test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        # actions/checkout@v5.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+      - name: Make scan script executable
+        run: chmod +x scripts/run-zap-scan.sh
+
+      - name: Run DAST scan script
+        run: ./scripts/run-zap-scan.sh
+
+      # This step will run even if the DAST scan fails, ensuring the report is always available.
+      - name: Upload DAST Scan Report
+        if: always()
+        # actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dast-scan-report
+          path: reports/
