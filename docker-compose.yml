@@ -32,6 +32,8 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+      vault:
+        condition: service_healthy
       alloy:
         condition: service_started
     networks:
@@ -64,6 +66,8 @@ services:
       keycloak:
         condition: service_healthy
       resource-server:
+        condition: service_healthy
+      vault:
         condition: service_healthy
       alloy:
         condition: service_started
@@ -139,6 +143,34 @@ services:
       - .env
     volumes:
       - keycloak-db-data:/var/lib/postgresql/data
+    networks:
+      - lab-net
+
+  # --------------------------------------------------------------------------
+  # Secrets Management Service: HashiCorp Vault
+  # --------------------------------------------------------------------------
+  vault:
+    image: "hashicorp/vault:1.20.3"
+    container_name: vault
+    ports:
+      - "8200:8200"
+    environment:
+      # Root token for the dev server
+      VAULT_DEV_ROOT_TOKEN_ID: "dev-root-token"
+      # Target address for the vault CLI tool inside the container
+      VAULT_ADDR: "http://127.0.0.1:8200"
+      # Auth token for the vault CLI, enabling `docker exec` commands
+      VAULT_TOKEN: "dev-root-token"
+    cap_add:
+      # Grants mlock capability to prevent secrets from being swapped to disk
+      - IPC_LOCK
+    command: "server -dev"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8200/v1/sys/health || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
     networks:
       - lab-net
 
