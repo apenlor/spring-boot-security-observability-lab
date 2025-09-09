@@ -1,6 +1,7 @@
 package com.apenlor.lab.resourceserver.config;
 
 import com.apenlor.lab.resourceserver.auth.KeycloakRoleConverter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -33,6 +34,9 @@ public class SecurityConfig {
             "/swagger-ui.html"
     };
 
+    @Value("${actuator.roles}")
+    private String actuatorAdminRole;
+
     /**
      * Configures the security filter chain for the management endpoints (Actuator).
      * <p>
@@ -51,7 +55,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         // Allow anonymous access to health and info endpoints.
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                        .anyRequest().hasRole("ACTUATOR_ADMIN")
+                        .anyRequest().hasRole(actuatorAdminRole)
                 )
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

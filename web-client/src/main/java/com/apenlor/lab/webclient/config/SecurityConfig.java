@@ -1,5 +1,6 @@
 package com.apenlor.lab.webclient.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -24,6 +25,9 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Value("${actuator.roles}")
+    private String actuatorAdminRole;
+
     private final ClientRegistrationRepository clientRegistrationRepository;
 
     public SecurityConfig(ClientRegistrationRepository clientRegistrationRepository) {
@@ -47,7 +51,7 @@ public class SecurityConfig {
                         // Allow anonymous access to non-sensitive health and info endpoints.
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         // Secure all other actuator endpoints.
-                        .anyRequest().hasRole("ACTUATOR_ADMIN")
+                        .anyRequest().hasRole(actuatorAdminRole)
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(AbstractHttpConfigurer::disable)
