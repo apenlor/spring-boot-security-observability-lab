@@ -9,14 +9,26 @@ TARGET_URL="http://localhost:8081/v3/api-docs"
 REPORT_DIR="reports"
 REPORT_FILE="zap-report.html"
 ZAP_IMAGE="zaproxy/zap-stable"
+VAULT_SETUP_SERVICE="vault-setup"
 
 # --- Environment Configuration ---
-# Determine which environment file to use.
-# In CI, we use the committed .env.ci file with test defaults.
-# Locally, we prefer the user's private .env file.
+# Determine which environment files to use.
+# In CI, we use the committed .env.ci and .secrets.env.ci files.
+# Locally, we prefer the user's private .env and .secrets.env files.
 if [[ "${GITHUB_ACTIONS}" == "true" ]]; then
-  echo "CI environment detected. Creating .env file from .env.ci"
+  echo "CI environment detected. Creating .env file from .env.ci and .secrets.env from .secrets.env.ci"
   cp .env.ci .env
+  cp .secrets.env.ci .secrets.env
+else
+  # For local runs, ensure .env and .secrets.env exist
+  if [[ ! -f .env ]]; then
+      echo "ERROR: Local .env file not found. Please create it from .env.example." >&2
+      exit 1
+  fi
+  if [[ ! -f .secrets.env ]]; then
+      echo "ERROR: Local .secrets.env file not found. Please create it from .secrets.env.example." >&2
+      exit 1
+  fi
 fi
 
 # --- Environment-aware command detection ---
@@ -34,14 +46,12 @@ echo "Using compose command: '${COMPOSE_CMD}'"
 mkdir -p ${REPORT_DIR}
 echo "Starting DAST Scan Orchestration..."
 
-# 1. Start the service to be scanned in the background
-echo "Starting dependent services (Keycloak) and target service (${SERVICE_NAME})..."
-${COMPOSE_CMD} up -d postgres keycloak
-echo "Waiting 30 seconds for Keycloak to initialize..."
-sleep 30
-${COMPOSE_CMD} up -d --build ${SERVICE_NAME}
+# 1. Start the necessary services
+echo "Starting infrastructure services (postgres, keycloak, vault, ${VAULT_SETUP_SERVICE}) and target service (${SERVICE_NAME})..."
+# Ensure Vault and Vault Setup are included in the startup list
+${COMPOSE_CMD} up -d postgres keycloak vault ${VAULT_SETUP_SERVICE} ${SERVICE_NAME}
 
-echo "Waiting 30 seconds for application (${SERVICE_NAME}) to be fully available..."
+echo "Waiting 30 seconds for all services to initialize and Vault to be populated..."
 sleep 30
 
 # 2. Run the OWASP ZAP Baseline scan in a container
@@ -67,4 +77,11 @@ docker run --rm --network=host \
 echo "Shutting down all services..."
 ${COMPOSE_CMD} down
 
-echo "✅ DAST scan complete. Report available in ./${REPORT_DIR}/${REPORT_FILE}"
+# --- Post-Script Cleanup ---
+# In CI, clean up the copied .env and .secrets.env files
+if [[ "${GITHUB_ACTIONS}" == "true" ]]; then
+    echo "CI environment detected. Cleaning up .env and .secrets.env files."
+    rm -f .env .secrets.env
+fi
+
+echo "DAST Scan Orchestration Complete."

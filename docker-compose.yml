@@ -30,7 +30,11 @@ services:
       retries: 10
       start_period: 20s
     depends_on:
+      vault-setup:
+        condition: service_completed_successfully
       keycloak:
+        condition: service_healthy
+      vault:
         condition: service_healthy
       alloy:
         condition: service_started
@@ -61,9 +65,13 @@ services:
       # Mount the agent JAR into a known location in the container.
       - ./config/otel/opentelemetry-javaagent.jar:/app/opentelemetry-javaagent.jar:ro
     depends_on:
+      vault-setup:
+        condition: service_completed_successfully
       keycloak:
         condition: service_healthy
       resource-server:
+        condition: service_healthy
+      vault:
         condition: service_healthy
       alloy:
         condition: service_started
@@ -139,6 +147,55 @@ services:
       - .env
     volumes:
       - keycloak-db-data:/var/lib/postgresql/data
+    networks:
+      - lab-net
+
+  # --------------------------------------------------------------------------
+  # Secrets Management Service: HashiCorp Vault
+  # --------------------------------------------------------------------------
+  vault:
+    image: "hashicorp/vault:1.20.3"
+    container_name: vault
+    ports:
+      - "8200:8200"
+    environment:
+      # Root token for the dev server
+      VAULT_DEV_ROOT_TOKEN_ID: "dev-root-token"
+      # Target address for the vault CLI tool inside the container
+      VAULT_ADDR: "http://127.0.0.1:8200"
+      # Auth token for the vault CLI, enabling `docker exec` commands
+      VAULT_TOKEN: "dev-root-token"
+    cap_add:
+      # Grants mlock capability to prevent secrets from being swapped to disk
+      - IPC_LOCK
+    command: "server -dev"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8200/v1/sys/health || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
+    networks:
+      - lab-net
+
+  # --------------------------------------------------------------------------
+  # Vault Setup Service
+  # --------------------------------------------------------------------------
+  vault-setup:
+    image: "hashicorp/vault:1.20.3"
+    container_name: vault-setup
+    volumes:
+      # Mount the script into the container to be executed
+      - ./scripts/populate-vault.sh:/usr/local/bin/populate-vault.sh:ro
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=dev-root-token
+    env_file:
+      - .secrets.env
+    command: "sh /usr/local/bin/populate-vault.sh"
+    depends_on:
+      vault:
+        condition: service_healthy
     networks:
       - lab-net
 
@@ -266,9 +323,9 @@ services:
 
 secrets:
   actuator_username:
-    environment: "ACTUATOR_USERNAME"
+    environment: "PROMETHEUS_SCRAP_USER"
   actuator_password:
-    environment: "ACTUATOR_PASSWORD"
+    environment: "PROMETHEUS_SCRAP_PASSWORD"
 
 volumes:
   grafana-data:
