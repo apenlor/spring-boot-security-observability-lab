@@ -46,6 +46,7 @@ Desktop.ini
 ### Lab Specific ###
 # Local environment variables
 .env
+.secrets.env
 
 # Persistent data volumes
 /data/
