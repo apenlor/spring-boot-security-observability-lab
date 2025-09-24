@@ -2,7 +2,7 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/8132e73dce8a4e74934e4e4a7baffc9a)](https://app.codacy.com/gh/apenlor/spring-boot-security-observability-lab/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![CI Build Status](https://github.com/apenlor/spring-boot-security-observability-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/apenlor/spring-boot-security-observability-lab/actions/workflows/ci.yml)
-[![Latest Release](https://img.shields.io/github/v/tag/apenlor/spring-boot-security-observability-lab)](https://github.com/apenlor/spring-boot-security-observability-lab/tags)
+[![Latest Release](https://img.shields.io/github/v/release/apenlor/spring-boot-security-observability-lab)](https://github.com/apenlor/spring-boot-security-observability-lab/releases/latest)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 This is an advanced, hands-on lab demonstrating the architectural evolution of a modern Java application. We will build
