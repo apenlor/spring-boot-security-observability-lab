@@ -39,7 +39,9 @@ jobs:
       # The 'verify' lifecycle phase automatically triggers the dependency-check plugin.
       # The build will fail if any high-severity CVEs are found.
       - name: Build, Test, and Scan Dependencies with Maven
-        run: ./mvnw -B clean verify
+        run: ./mvnw -B clean verify \
+          -DossIndexUsername=${{ secrets.OSSINDEX_USERNAME }} \
+          -DossIndexPassword=${{ secrets.OSSINDEX_TOKEN }}
 
   build_and_scan_images:
     name: Build & Scan Docker Images
