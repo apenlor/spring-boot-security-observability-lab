@@ -1,0 +1,71 @@
+name: Create & publish release
+
+on:
+  # Trigger automatically for v* tags
+  push:
+    tags:
+      - 'v*.*'
+  # Allow manual triggering for backfilling old releases
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The tag to create a release for (e.g., v1.0-rest)'
+        required: true
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Determine tag name
+        id: get_tag
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          REF_TAG: ${{ github.ref_name }}
+        run: |
+          if [ -n "$INPUT_TAG" ]; then
+            echo "TAG_NAME=$INPUT_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "TAG_NAME=$REF_TAG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout code at the specified tag
+        # actions/checkout@v5.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          ref: ${{ steps.get_tag.outputs.TAG_NAME }}
+
+      - name: Create source code archive
+        env:
+          TAG: ${{ steps.get_tag.outputs.TAG_NAME }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          ARCHIVE_NAME="${REPO_NAME}-${TAG}.tar.gz"
+          tar --sort=name --mtime='UTC 2020-01-01' \
+              --owner=0 --group=0 --numeric-owner \
+              --ignore-failed-read --warning=no-file-changed \
+              -czf "${ARCHIVE_NAME}" \
+              --exclude='.git' --exclude="${ARCHIVE_NAME}" .
+          echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> $GITHUB_ENV
+          echo "Created archive: ${ARCHIVE_NAME}"
+
+      - name: Calculate checksums
+        run: |
+          sha256sum "${{ env.ARCHIVE_NAME }}" > SHA256SUMS.txt
+          echo "Calculated checksums."
+
+      - name: Create or update GitHub Release
+        #softprops/action-gh-release@2.3.3
+        uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836
+        env:
+          TAG: ${{ steps.get_tag.outputs.TAG_NAME }}
+        with:
+          tag_name: ${{ env.TAG }}
+          files: |
+            ${{ env.ARCHIVE_NAME }}
+            SHA256SUMS.txt
+          allow_override: true
+          generate_release_notes: true
